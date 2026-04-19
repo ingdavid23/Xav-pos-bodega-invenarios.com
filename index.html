@@ -3034,7 +3034,7 @@ function renderCashierPOS() {
     });
   }
 
-  // === FUNCIÓN ACTUALIZADA: Filtra por Búsqueda y por Categoría ===
+  // === FUNCIÓN ACTUALIZADA: Tarjetas a prueba de aplastamiento ===
   function renderProducts() {
     const container = document.getElementById('pos-products');
     if (!container) return;
@@ -3048,71 +3048,23 @@ function renderCashierPOS() {
       return p.stock > 0 && matchesSearch && matchesCat;
     });
 
-
     container.innerHTML = filtered.map(p => `
-      <button data-add-prod="${p.id}" class="bg-card hover:bg-bg border border-card rounded-xl p-2 text-left transition group flex flex-col gap-2 relative overflow-hidden shadow-sm">
-        ${p.stock <= (p.min_stock || 5) ? `<div class="absolute top-0 right-0 bg-warn text-bg text-[10px] px-2 font-bold rounded-bl-lg z-10">Bajo Stock</div>` : ''}
+      <div data-add-prod="${p.id}" role="button" tabindex="0" class="bg-card hover:bg-surface border border-card rounded-xl p-3 text-left transition group flex flex-col justify-between h-full min-h-[240px] w-full relative shadow-sm cursor-pointer">
         
-        <div class="w-full aspect-video bg-surface rounded-lg overflow-hidden shrink-0">
-          ${p.image ? `<img src="${p.image}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center"><i data-lucide="image" class="text-muted w-8 h-8"></i></div>`}
-        </div>
-        <div class="flex-1 flex flex-col justify-between">
-          <div>
-            <div class="text-sm font-semibold group-hover:text-accent transition truncate">${p.name}</div>
-            <div class="text-xs text-muted mt-0.5 font-mono">${p.code||'---'} · <span class="${p.stock <= (p.min_stock||5) ? 'text-warn font-bold' : ''}">${p.stock} uds</span></div>
-          </div>
-          <div class="text-base font-bold text-success mt-1">${currency(p.sell_price)}</div>
-        </div>
-      </button>`).join('') || `<div class="col-span-2 md:col-span-3 text-center text-muted py-8 text-sm">No se encontraron productos en esta categoría</div>`;
-
-
-    lucide.createIcons();
-    container.querySelectorAll('[data-add-prod]').forEach(btn => {
-      btn.onclick = () => {
-        const prod = allRecords.find(p => p.id === btn.dataset.addProd);
-        if (!prod) return;
-        const existing = cart.find(c => c.id === prod.id);
-        if (existing) {
-          if (existing.qty < prod.stock) existing.qty++;
-          else showToast('Stock insuficiente', 'warn');
-        } else {
-          cart.push({ id: prod.id, name: prod.name, sell_price: prod.sell_price, buy_price: prod.buy_price||0, qty: 1, maxStock: prod.stock });
-        }
-        renderPOSView();
-      };
-    });
-  }
-
-  // === FUNCIÓN ÚNICA Y ACTUALIZADA: Productos más grandes y sin recortes ===
-  function renderProducts() {
-    const container = document.getElementById('pos-products');
-    if (!container) return;
-    
-    const searchInput = document.getElementById('pos-search');
-    const term = searchInput ? searchInput.value.toLowerCase() : "";
-
-    const filtered = records('product').filter(p => {
-      const matchesSearch = !term || p.name.toLowerCase().includes(term) || (p.code||'').toLowerCase().includes(term);
-      const matchesCat = !currentPosCategory || p.category === currentPosCategory;
-      return p.stock > 0 && matchesSearch && matchesCat;
-    });
-
-    container.innerHTML = filtered.map(p => `
-      <button data-add-prod="${p.id}" class="bg-card hover:bg-surface border border-card rounded-xl p-3 text-left transition group flex flex-col gap-3 relative overflow-hidden shadow-md">
         ${p.stock <= (p.min_stock || 5) ? `<div class="absolute top-0 right-0 bg-warn text-bg text-[10px] px-2 py-0.5 font-bold rounded-bl-lg z-10">Bajo Stock</div>` : ''}
         
-        <div class="w-full h-36 sm:h-40 bg-surface rounded-lg overflow-hidden shrink-0 flex items-center justify-center p-1">
+        <div class="w-full h-32 sm:h-36 bg-surface rounded-lg overflow-hidden shrink-0 flex items-center justify-center p-1 mb-2 border border-card/50">
           ${p.image ? `<img src="${p.image}" class="w-full h-full object-contain">` : `<i data-lucide="image" class="text-muted w-10 h-10"></i>`}
         </div>
         
-        <div class="flex-1 flex flex-col justify-between">
+        <div class="flex flex-col flex-grow w-full justify-between">
           <div>
-            <div class="text-base font-bold group-hover:text-accent transition leading-tight line-clamp-2">${p.name}</div>
-            <div class="text-xs text-muted mt-1 font-mono">${p.code||'---'} · <span class="${p.stock <= (p.min_stock||5) ? 'text-warn font-bold' : ''}">${p.stock} uds</span></div>
+            <div class="text-sm font-bold text-txt group-hover:text-accent transition leading-tight line-clamp-2">${p.name}</div>
+            <div class="text-[11px] text-muted mt-1 font-mono">${p.code||'---'} · <span class="${p.stock <= (p.min_stock||5) ? 'text-warn font-bold' : ''}">${p.stock} uds</span></div>
           </div>
-          <div class="text-lg font-extrabold text-success mt-2">${currency(p.sell_price)}</div>
+          <div class="text-lg font-extrabold text-success mt-auto pt-2">${currency(p.sell_price)}</div>
         </div>
-      </button>`).join('') || `<div class="col-span-full text-center text-muted py-8 text-base">No se encontraron productos en esta categoría</div>`;
+      </div>`).join('') || `<div class="col-span-full text-center text-muted py-8 text-base w-full">No se encontraron productos en esta categoría</div>`;
 
     lucide.createIcons();
     container.querySelectorAll('[data-add-prod]').forEach(btn => {

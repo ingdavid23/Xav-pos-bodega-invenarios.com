@@ -2,17 +2,17 @@
 <html lang="es" class="h-full">
  <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Sistema POS</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
 * { font-family: 'DM Sans', sans-serif; }
-html, body { height: 100%; margin: 0; }
-::-webkit-scrollbar { width: 6px; }
+html, body { height: 100%; margin: 0; overflow: hidden; } /* Prevenir scroll doble */
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
 @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
@@ -22,10 +22,6 @@ html, body { height: 100%; margin: 0; }
 @keyframes modalIn { from { opacity:0; transform:scale(0.9); } to { opacity:1; transform:scale(1); } }
 .modal-show { animation: modalIn .3s ease-out; }
 .toast-show { animation: fadeIn .3s ease-out; }
-.pos-grid { display: grid; grid-template-columns: 1fr 380px; height: 100%; }
-@media (max-width: 900px) { .pos-grid { grid-template-columns: 1fr; } }
-input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
 
 /* REGLAS PARA IMPRESORA TÉRMICA */
 @media print {
@@ -2838,41 +2834,46 @@ function renderCashierPOS() {
 
   function renderPOSView() {
     posContent.innerHTML = `
-    <div class="pos-grid h-full">
-      <div class="flex flex-col p-4 space-y-3 h-full overflow-hidden">
+    <div class="flex flex-col lg:flex-row h-full w-full overflow-hidden bg-bg">
+      
+      <div class="flex-1 flex flex-col p-3 sm:p-4 gap-3 h-[60%] lg:h-full overflow-hidden">
+        
         <div class="flex gap-2 shrink-0">
           <div class="relative flex-1">
             <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted"></i>
-            <input id="pos-search" class="w-full bg-card border border-card rounded-lg pl-9 pr-4 py-2.5 text-sm focus:border-accent focus:outline-none" placeholder="Buscar o escanear..." autocomplete="off">
+            <input id="pos-search" class="w-full bg-card border border-card rounded-lg pl-9 pr-4 py-3 sm:py-2.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50" placeholder="Buscar o escanear..." autocomplete="off">
           </div>
           <button type="button" onclick="window.openBulkModal()" class="bg-accent/10 border border-accent/20 text-accent px-4 rounded-lg hover:bg-accent hover:text-bg transition flex items-center gap-2 font-semibold text-sm shrink-0 shadow-sm" title="Venta a Granel Libre">
-            <i data-lucide="scale" class="w-4 h-4 pointer-events-none"></i> Granel
+            <i data-lucide="scale" class="w-5 h-5 pointer-events-none"></i> <span class="hidden sm:inline">Granel</span>
           </button>
         </div>
 
         <div id="pos-categories" class="flex gap-2 overflow-x-auto pb-1 shrink-0" style="scrollbar-width: none;"></div>
 
-       <div id="pos-products" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 flex-1 overflow-y-auto content-start pr-2 pb-4"></div>
+        <div id="pos-products" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 flex-1 overflow-y-auto content-start pr-1 pb-4"></div>
         ${!products.length ? '<p class="text-muted text-center mt-8">No hay productos en inventario.<br>Pide al administrador que los agregue.</p>' : ''}
       </div>
 
-      <div class="bg-surface border-l border-card flex flex-col h-full overflow-hidden">
-        <div class="p-4 border-b border-card">
-          <h3 class="font-bold flex items-center gap-2"><i data-lucide="shopping-cart" class="w-4 h-4 text-accent"></i>Carrito <span class="text-sm text-muted font-normal">(${cart.length})</span></h3>
+      <div class="w-full lg:w-[380px] xl:w-[420px] bg-surface border-t lg:border-t-0 lg:border-l border-card flex flex-col h-[40%] lg:h-full shrink-0 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] lg:shadow-none z-10">
+        
+        <div class="p-3 sm:p-4 border-b border-card flex justify-between items-center bg-card lg:bg-transparent shrink-0">
+          <h3 class="font-bold flex items-center gap-2"><i data-lucide="shopping-cart" class="w-5 h-5 text-accent"></i>Carrito <span class="text-sm text-muted font-normal">(${cart.length})</span></h3>
+          <button id="clear-cart" class="text-muted text-xs sm:text-sm hover:text-danger transition px-3 py-1.5 rounded-lg bg-surface border border-card lg:border-none lg:bg-transparent font-semibold shadow-sm lg:shadow-none">Vaciar</button>
         </div>
-        <div id="cart-items" class="flex-1 overflow-auto p-3 space-y-2"></div>
-        <div class="p-4 border-t border-card space-y-3">
-          <div class="flex justify-between text-lg font-bold"><span>Total</span><span class="text-success">${currency(cartTotal())}</span></div>
+        
+        <div id="cart-items" class="flex-1 overflow-y-auto p-2 sm:p-3 space-y-2"></div>
+        
+        <div class="p-3 sm:p-4 border-t border-card space-y-3 sm:space-y-4 shrink-0 bg-surface">
+          <div class="flex justify-between text-lg sm:text-xl font-extrabold"><span>Total</span><span class="text-success">${currency(cartTotal())}</span></div>
+          
           <div class="flex gap-2">
-            <button data-pay="Efectivo" class="flex-1 py-2 rounded-lg text-sm font-semibold transition ${paymentMethod==='Efectivo'?'bg-success text-bg':'bg-card text-muted hover:bg-bg'}">Efectivo</button>
-            <button data-pay="Transfer" class="flex-1 py-2 rounded-lg text-sm font-semibold transition ${paymentMethod==='Transfer'?'bg-accent2 text-bg':'bg-card text-muted hover:bg-bg'}">Transfer</button>
+            <button data-pay="Efectivo" class="flex-1 py-3 sm:py-2.5 rounded-xl sm:rounded-lg text-sm font-bold transition ${paymentMethod==='Efectivo'?'bg-success text-bg shadow-md border-success':'bg-card text-muted hover:bg-surface border border-card'}">Efectivo</button>
+            <button data-pay="Transfer" class="flex-1 py-3 sm:py-2.5 rounded-xl sm:rounded-lg text-sm font-bold transition ${paymentMethod==='Transfer'?'bg-accent2 text-bg shadow-md border-accent2':'bg-card text-muted hover:bg-surface border border-card'}">Transfer</button>
           </div>
           
-          <button id="checkout-btn" class="w-full bg-warn text-bg font-bold py-3 rounded-lg hover:opacity-90 transition ${cart.length?'':'opacity-50 cursor-not-allowed'}" ${cart.length?'':'disabled'}>
+          <button id="checkout-btn" class="w-full bg-warn text-bg font-extrabold py-3.5 sm:py-4 rounded-xl hover:opacity-90 transition shadow-lg text-lg ${cart.length?'':'opacity-50 cursor-not-allowed'}" ${cart.length?'':'disabled'}>
             Cobrar ${currency(cartTotal())}
           </button>
-          
-          <button id="clear-cart" class="w-full text-muted text-sm hover:text-danger transition py-1 mt-2">Vaciar carrito</button>
         </div>
       </div>
     </div>`;
@@ -2890,7 +2891,7 @@ function renderCashierPOS() {
         if (!code) return;
 
         const product = records('product').find(p => 
-          p.code === code || p.code === code.toUpperCase() || p.code === code.toLowerCase()
+          p.code === code || p.code === code.toUpperCase() || p.code === code.toLowerCase() || p.name.toLowerCase() === code.toLowerCase()
         );
 
         if (product) {
@@ -2925,14 +2926,16 @@ function renderCashierPOS() {
     document.querySelectorAll('[data-pay]').forEach(b => {
       b.onclick = () => { paymentMethod = b.dataset.pay; renderPOSView(); };
     });
+    
+    // El botón vaciar ahora se asocia correctamente al ID superior
     document.getElementById('clear-cart').onclick = () => { cart = []; renderPOSView(); };
     document.getElementById('checkout-btn').onclick = openPaymentModal;
     
-    // === ESCUDO ANTI-PÉRDIDA DE FOCO ===
+    // Escudo para no abrir el teclado en móviles si tocan otra parte, pero en PC funciona automático
     posContent.onclick = (e) => {
       if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
         const search = document.getElementById('pos-search');
-        if(search) search.focus();
+        if(search && window.innerWidth > 1024) search.focus();
       }
     };
 
@@ -2940,16 +2943,17 @@ function renderCashierPOS() {
       if (currentView !== 'cashier-pos') return; 
       const activeElement = document.activeElement;
       if (activeElement && activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
-        if (e.key.length === 1) { 
+        if (e.key.length === 1 && window.innerWidth > 1024) { 
           const search = document.getElementById('pos-search');
           if(search) search.focus(); 
         }
       }
     };
-    // ===================================
     
     lucide.createIcons();
-    setTimeout(() => posSearch.focus(), 100);
+    if (window.innerWidth > 1024) {
+      setTimeout(() => posSearch.focus(), 100);
+    }
   }
 
   // === NUEVA FUNCIÓN: Dibuja y maneja la barra de categorías ===

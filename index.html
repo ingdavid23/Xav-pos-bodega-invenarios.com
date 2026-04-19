@@ -1017,22 +1017,22 @@ function renderInventory(container) {
     </div>
 
     <div class="bg-surface rounded-xl border border-card overflow-hidden shadow-sm mt-4 w-full">
-      <div class="overflow-x-auto w-full">
-        <table class="w-full text-sm min-w-[800px]">
-          <thead>
-            <tr class="text-muted text-left border-b border-card bg-surface/50">
-              <th class="p-3">Código</th>
-              <th class="p-3">Nombre</th>
-              <th class="p-3">Categoría</th>
-              <th class="p-3">P.Compra</th>
-              <th class="p-3">P.Venta</th>
-              <th class="p-3">Stock</th>
-              <th class="p-3 print:hidden">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="inv-list"></tbody>
-        </table>
-      </div>
+      <div class="bg-surface rounded-xl border border-card overflow-hidden shadow-sm mt-4 w-full">
+      <table class="w-full text-xs sm:text-sm text-left">
+        <thead class="bg-surface/50">
+          <tr class="text-muted border-b border-card">
+            <th class="hidden sm:table-cell p-3">Código</th>
+            <th class="p-2 sm:p-3">Nombre</th>
+            <th class="hidden md:table-cell p-3">Categoría</th>
+            <th class="hidden lg:table-cell p-3">P.Compra</th>
+            <th class="p-2 sm:p-3">P.Venta</th>
+            <th class="p-2 sm:p-3 text-center">Stock</th>
+            <th class="p-2 sm:p-3 text-center print:hidden">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="inv-list"></tbody>
+      </table>
+    </div>
     </div>
   </div>`;
 
@@ -1254,88 +1254,108 @@ function renderSalesReport(container) {
 
     container.innerHTML = `
     <div class="fade-in space-y-6 pb-10">
-      <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h2 class="text-xl font-bold">Ventas y Reportes</h2>
-        
-        <div class="flex items-center gap-1 bg-surface border border-card rounded-lg p-1 shadow-sm">
-          <button type="button" id="rep-prev" class="p-1.5 hover:bg-card rounded transition text-muted hover:text-txt"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
-          <div class="text-sm font-bold w-36 text-center uppercase tracking-wider text-accent">${monthName} ${y}</div>
-          <button type="button" id="rep-next" class="p-1.5 hover:bg-card rounded transition text-muted hover:text-txt"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+        <div class="flex items-center justify-center w-full sm:w-auto gap-1 bg-surface border border-card rounded-lg p-1 shadow-sm">
+          <button type="button" id="rep-prev" class="p-2 hover:bg-card rounded transition text-muted hover:text-txt"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+          <div class="text-sm font-bold w-32 sm:w-36 text-center uppercase tracking-wider text-accent">${monthName} ${y}</div>
+          <button type="button" id="rep-next" class="p-2 hover:bg-card rounded transition text-muted hover:text-txt"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
         </div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="bg-surface rounded-xl p-4 border border-card text-center">
-          <div class="text-muted text-sm">${isCurrentMonth ? 'Ventas Hoy' : 'Promedio Diario'}</div>
+        <div class="bg-surface rounded-xl p-4 border border-card text-center shadow-sm">
+          <div class="text-muted text-xs sm:text-sm">${isCurrentMonth ? 'Ventas Hoy' : 'Promedio Diario'}</div>
           <div class="text-xl font-bold text-success mt-1">${currency(isCurrentMonth ? todayTotal : monthTotal / 30)}</div>
-          <div class="text-xs text-muted">${isCurrentMonth ? todaySales.length + ' ventas hoy' : ''}</div>
+          <div class="text-xs text-muted mt-1">${isCurrentMonth ? todaySales.length + ' ventas hoy' : ''}</div>
         </div>
-        <div class="bg-surface rounded-xl p-4 border border-card text-center">
-          <div class="text-muted text-sm">Total ${monthName}</div>
+        <div class="bg-surface rounded-xl p-4 border border-card text-center shadow-sm">
+          <div class="text-muted text-xs sm:text-sm">Total ${monthName}</div>
           <div class="text-xl font-bold text-accent mt-1">${currency(monthTotal)}</div>
-          <div class="text-xs text-muted">${filteredSales.length} ventas en el mes</div>
+          <div class="text-xs text-muted mt-1">${filteredSales.length} ventas en el mes</div>
         </div>
-        <div class="bg-surface rounded-xl p-4 border border-card text-center">
-          <div class="text-muted text-sm">Ticket Promedio</div>
+        <div class="bg-surface rounded-xl p-4 border border-card text-center shadow-sm">
+          <div class="text-muted text-xs sm:text-sm">Ticket Promedio</div>
           <div class="text-xl font-bold text-accent2 mt-1">${currency(avgTicket)}</div>
-          <div class="text-xs text-muted">Valor medio por compra</div>
         </div>
       </div>
 
-      <div class="bg-surface rounded-xl border border-card overflow-x-auto shadow-sm">
-        <div class="p-4 border-b border-card font-bold text-sm text-muted flex justify-between items-center">
+      <div class="bg-surface rounded-xl border border-card overflow-hidden shadow-sm">
+        <div class="p-3 sm:p-4 border-b border-card font-bold text-xs sm:text-sm text-muted flex justify-between items-center bg-surface/50">
             <span>Historial de Ventas - ${monthName}</span>
-            <button id="export-sales-btn" class="bg-success/10 text-success text-[10px] px-2 py-1 rounded border border-success/20 hover:bg-success/20 uppercase font-bold transition">Exportar Mes</button>
+            <button id="export-sales-btn" class="bg-success/10 text-success text-[10px] px-2 py-1 rounded border border-success/20 hover:bg-success/20 uppercase font-bold transition">Exportar</button>
         </div>
-        <table class="w-full text-sm">
-          <thead><tr class="text-muted text-left border-b border-card"><th class="p-3">Fecha</th><th class="p-3">Producto</th><th class="p-3">Cant</th><th class="p-3">Total</th><th class="p-3">Pago</th><th class="p-3">Cajero</th><th class="p-3 text-center">Acciones</th></tr></thead>
+        <table class="w-full text-xs sm:text-sm text-left">
+          <thead>
+            <tr class="text-muted border-b border-card">
+              <th class="p-2 sm:p-3">Fecha</th>
+              <th class="p-2 sm:p-3">Producto</th>
+              <th class="hidden sm:table-cell p-3">Cant</th>
+              <th class="p-2 sm:p-3">Total</th>
+              <th class="hidden md:table-cell p-3">Pago</th>
+              <th class="hidden lg:table-cell p-3">Cajero</th>
+              <th class="p-2 sm:p-3 text-center">Acciones</th>
+            </tr>
+          </thead>
           <tbody>
             ${filteredSales.slice().reverse().map(s => `
               <tr class="border-b border-card/50 hover:bg-card/30 transition">
-                <td class="p-3 text-muted">${s.date ? s.date.slice(0,16).replace('T',' ') : '-'}</td>
-                <td class="p-3 font-medium">
-                  ${s.status === 'abono' ? `<span class="text-success flex items-center gap-1"><i data-lucide="hand-coins" class="w-3 h-3"></i> ${s.name}</span>` : s.name||'-'}
+                <td class="p-2 sm:p-3 text-muted whitespace-nowrap">
+                  <span class="sm:hidden">${s.date ? s.date.slice(5,10) : '-'}</span>
+                  <span class="hidden sm:inline">${s.date ? s.date.slice(0,16).replace('T',' ') : '-'}</span>
                 </td>
-                <td class="p-3">${s.quantity||1}</td>
-                <td class="p-3 font-semibold">${currency(s.total)}</td>
-                <td class="p-3"><span class="text-xs px-2 py-0.5 rounded-full ${s.payment_method==='Efectivo'?'bg-success/20 text-success':'bg-accent/20 text-accent'}">${s.payment_method||'-'}</span></td>
-                <td class="p-3 text-muted">${s.cashier||'-'}</td>
-                <td class="p-3 text-center">
-                  <button type="button" data-del-sale="${s.id}" class="p-2 hover:bg-danger/20 rounded-lg transition text-danger" title="Eliminar Registro">
+                <td class="p-2 sm:p-3 font-medium truncate max-w-[120px] sm:max-w-none">
+                  ${s.status === 'abono' ? `<span class="text-success flex items-center gap-1"><i data-lucide="hand-coins" class="w-3 h-3 shrink-0"></i> <span class="truncate">${s.name}</span></span>` : s.name||'-'}
+                </td>
+                <td class="hidden sm:table-cell p-3">${s.quantity||1}</td>
+                <td class="p-2 sm:p-3 font-semibold">${currency(s.total)}</td>
+                <td class="hidden md:table-cell p-3"><span class="text-[10px] sm:text-xs px-2 py-0.5 rounded-full ${s.payment_method==='Efectivo'?'bg-success/20 text-success':'bg-accent/20 text-accent'}">${s.payment_method||'-'}</span></td>
+                <td class="hidden lg:table-cell p-3 text-muted">${s.cashier||'-'}</td>
+                <td class="p-2 sm:p-3 text-center">
+                  <button type="button" data-del-sale="${s.id}" class="p-1.5 sm:p-2 hover:bg-danger/20 rounded-lg transition text-danger" title="Eliminar Registro">
                     <i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i>
                   </button>
                 </td>
-              </tr>`).join('') || `<tr><td colspan="7" class="p-10 text-center text-muted">No hubo ventas registradas en ${monthName}</td></tr>`}
+              </tr>`).join('') || `<tr><td colspan="7" class="p-8 text-center text-muted">No hubo ventas registradas en ${monthName}</td></tr>`}
           </tbody>
         </table>
       </div>
 
-      
-      <div class="bg-surface rounded-xl border border-card overflow-x-auto shadow-sm">
-        <div class="p-4 border-b border-card font-bold text-sm text-muted">
+      <div class="bg-surface rounded-xl border border-card overflow-hidden shadow-sm">
+        <div class="p-3 sm:p-4 border-b border-card font-bold text-xs sm:text-sm text-muted bg-surface/50">
             Movimientos de Stock - ${monthName}
         </div>
-        <table class="w-full text-sm">
-          <thead><tr class="text-muted text-left border-b border-card"><th class="p-3">Fecha</th><th class="p-3">Tipo</th><th class="p-3">Producto</th><th class="p-3">Cantidad</th><th class="p-3">Motivo</th><th class="p-3">Usuario</th><th class="p-3 text-center">Acciones</th></tr></thead>
+        <table class="w-full text-xs sm:text-sm text-left">
+          <thead>
+            <tr class="text-muted border-b border-card">
+              <th class="hidden sm:table-cell p-3">Fecha</th>
+              <th class="p-2 sm:p-3">Tipo</th>
+              <th class="p-2 sm:p-3">Producto</th>
+              <th class="p-2 sm:p-3">Cant</th>
+              <th class="hidden md:table-cell p-3">Motivo</th>
+              <th class="hidden lg:table-cell p-3">Usuario</th>
+              <th class="p-2 sm:p-3 text-center">Acciones</th>
+            </tr>
+          </thead>
           <tbody>
             ${filteredMovements.slice().reverse().map(m => `
               <tr class="border-b border-card/50 hover:bg-card/30 transition">
-                <td class="p-3 text-muted">${m.date ? m.date.slice(0,16).replace('T',' ') : '-'}</td>
-                <td class="p-3">
-                  <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${m.category==='in'?'bg-success/20 text-success':'bg-danger/20 text-danger'}">
-                    ${m.category==='in' ? 'ENTRADA (+)' : 'SALIDA (-)'}
+                <td class="hidden sm:table-cell p-3 text-muted whitespace-nowrap">${m.date ? m.date.slice(0,16).replace('T',' ') : '-'}</td>
+                <td class="p-2 sm:p-3">
+                  <span class="text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-bold whitespace-nowrap ${m.category==='in'?'bg-success/20 text-success':'bg-danger/20 text-danger'}">
+                    ${m.category==='in' ? 'ENTRADA' : 'SALIDA'}
                   </span>
                 </td>
-                <td class="p-3 font-medium">${m.name||'-'}</td>
-                <td class="p-3 font-bold ${m.category==='in'?'text-success':'text-danger'}">${m.category==='in'?'+':'-'}${m.quantity||0}</td>
-                <td class="p-3 text-muted truncate max-w-xs">${m.description||'-'}</td>
-                <td class="p-3 text-muted">${m.cashier||'-'}</td>
-                <td class="p-3 text-center">
-                  <button type="button" data-del-mov="${m.id}" class="p-2 hover:bg-danger/20 rounded-lg transition text-danger" title="Revertir Movimiento y Restaurar Stock">
+                <td class="p-2 sm:p-3 font-medium truncate max-w-[100px] sm:max-w-none">${m.name||'-'}</td>
+                <td class="p-2 sm:p-3 font-bold ${m.category==='in'?'text-success':'text-danger'}">${m.category==='in'?'+':'-'}${m.quantity||0}</td>
+                <td class="hidden md:table-cell p-3 text-muted truncate max-w-xs">${m.description||'-'}</td>
+                <td class="hidden lg:table-cell p-3 text-muted">${m.cashier||'-'}</td>
+                <td class="p-2 sm:p-3 text-center">
+                  <button type="button" data-del-mov="${m.id}" class="p-1.5 sm:p-2 hover:bg-danger/20 rounded-lg transition text-danger" title="Revertir Movimiento">
                     <i data-lucide="rotate-ccw" class="w-4 h-4 pointer-events-none"></i>
                   </button>
                 </td>
-              </tr>`).join('') || `<tr><td colspan="7" class="p-10 text-center text-muted">Sin movimientos de inventario en ${monthName}</td></tr>`}
+              </tr>`).join('') || `<tr><td colspan="7" class="p-8 text-center text-muted">Sin movimientos de inventario en ${monthName}</td></tr>`}
           </tbody>
         </table>
       </div>
@@ -1343,24 +1363,12 @@ function renderSalesReport(container) {
 
     lucide.createIcons();
 
-    document.getElementById('rep-prev').onclick = () => {
-      window.reportDate.setMonth(window.reportDate.getMonth() - 1);
-      draw();
-    };
-    document.getElementById('rep-next').onclick = () => {
-      window.reportDate.setMonth(window.reportDate.getMonth() + 1);
-      draw();
-    };
-
+    document.getElementById('rep-prev').onclick = () => { window.reportDate.setMonth(window.reportDate.getMonth() - 1); draw(); };
+    document.getElementById('rep-next').onclick = () => { window.reportDate.setMonth(window.reportDate.getMonth() + 1); draw(); };
     document.getElementById('export-sales-btn').onclick = () => {
         if(!filteredSales.length) return showToast('No hay datos para exportar', 'warn');
         const data = filteredSales.map(s => ({
-            'Fecha': s.date ? s.date.slice(0,16).replace('T',' ') : '-',
-            'Producto': s.name,
-            'Cantidad': s.quantity || 1,
-            'Total': s.total,
-            'Pago': s.payment_method || 'Efectivo',
-            'Cajero': s.cashier
+            'Fecha': s.date ? s.date.slice(0,16).replace('T',' ') : '-', 'Producto': s.name, 'Cantidad': s.quantity || 1, 'Total': s.total, 'Pago': s.payment_method || 'Efectivo', 'Cajero': s.cashier
         }));
         const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
@@ -1657,50 +1665,59 @@ function renderUsersAdmin(container) {
     <div class="flex flex-wrap items-center justify-between gap-3">
       <h2 class="text-xl font-bold">Usuarios</h2>
     </div>
-    <div class="bg-surface rounded-xl p-5 border border-card">
+    <div class="bg-surface rounded-xl p-4 sm:p-5 border border-card shadow-sm">
       <h3 id="u-form-title" class="font-semibold mb-3">Agregar Cajero</h3>
-      <form id="user-form" class="flex flex-wrap gap-3 items-end">
-        <div>
+      <form id="user-form" class="flex flex-col sm:flex-row flex-wrap gap-3 items-start sm:items-end">
+        <div class="w-full sm:flex-1">
           <label class="block text-xs text-muted mb-1">Nombre Real</label>
-          <input id="u-name" class="bg-card border border-card rounded-lg px-3 py-2 text-sm focus:border-accent focus:outline-none" placeholder="Nombre completo" required>
+          <input id="u-name" class="w-full bg-card border border-card rounded-lg px-3 py-2.5 text-sm focus:border-accent focus:outline-none" placeholder="Nombre completo" required>
         </div>
-        <div>
+        <div class="w-full sm:flex-1">
           <label class="block text-xs text-muted mb-1">Usuario (Para iniciar sesión)</label>
-          <input id="u-user" class="bg-card border border-card rounded-lg px-3 py-2 text-sm focus:border-accent focus:outline-none" placeholder="Ej: cajero2" required>
+          <input id="u-user" class="w-full bg-card border border-card rounded-lg px-3 py-2.5 text-sm focus:border-accent focus:outline-none" placeholder="Ej: cajero2" required>
         </div>
-        <div>
+        <div class="w-full sm:flex-1">
           <label class="block text-xs text-muted mb-1">Contraseña</label>
-          <input id="u-pass" type="text" class="bg-card border border-card rounded-lg px-3 py-2 text-sm focus:border-accent focus:outline-none" placeholder="Contraseña *" required>
+          <input id="u-pass" type="text" class="w-full bg-card border border-card rounded-lg px-3 py-2.5 text-sm focus:border-accent focus:outline-none" placeholder="Contraseña *" required>
         </div>
-        <div>
+        <div class="w-full sm:w-auto">
           <label class="block text-xs text-muted mb-1">Rol</label>
-          <select id="u-role" class="bg-card border border-card rounded-lg px-3 py-2 text-sm focus:border-accent focus:outline-none">
+          <select id="u-role" class="w-full bg-card border border-card rounded-lg px-3 py-2.5 text-sm focus:border-accent focus:outline-none">
             <option value="cashier">Cajero</option>
             <option value="admin">Administrador</option>
           </select>
         </div>
-        <div class="flex gap-2">
-          <button type="submit" id="u-btn" class="bg-accent text-bg font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition text-sm">Agregar</button>
-          <button type="button" id="u-cancel" class="bg-card text-muted px-3 py-2 rounded-lg hover:bg-bg transition text-sm hidden">Cancelar</button>
+        <div class="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+          <button type="submit" id="u-btn" class="flex-1 sm:flex-none bg-accent text-bg font-semibold px-6 py-2.5 rounded-lg hover:opacity-90 transition text-sm">Agregar</button>
+          <button type="button" id="u-cancel" class="flex-1 sm:flex-none bg-card text-muted px-4 py-2.5 rounded-lg hover:bg-bg transition text-sm hidden">Cancelar</button>
         </div>
       </form>
     </div>
-    <div class="bg-surface rounded-xl border border-card overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead><tr class="text-muted text-left border-b border-card"><th class="p-3">Nombre</th><th class="p-3">Usuario</th><th class="p-3">Contraseña</th><th class="p-3">Rol</th><th class="p-3 text-center">Acciones</th></tr></thead>
+    
+    <div class="bg-surface rounded-xl border border-card overflow-hidden shadow-sm">
+      <table class="w-full text-xs sm:text-sm text-left">
+        <thead class="bg-surface/50">
+          <tr class="text-muted border-b border-card">
+            <th class="p-2 sm:p-3">Nombre</th>
+            <th class="p-2 sm:p-3">Usuario</th>
+            <th class="hidden sm:table-cell p-3">Contraseña</th>
+            <th class="p-2 sm:p-3">Rol</th>
+            <th class="p-2 sm:p-3 text-center">Acciones</th>
+          </tr>
+        </thead>
         <tbody>
           ${allUsers.map(u => `
             <tr class="border-b border-card/50 hover:bg-card/30 transition">
-              <td class="p-3 font-medium">${u.name}</td>
-              <td class="p-3 text-muted">${u.username}</td>
-              <td class="p-3 text-muted">${u.password}</td>
-              <td class="p-3"><span class="text-xs px-2 py-0.5 rounded-full ${u.role==='admin'?'bg-accent/20 text-accent':'bg-accent2/20 text-accent2'}">${u.role==='admin'?'Admin':'Cajero'}</span></td>
-              <td class="p-3 flex justify-center gap-2">
-                <button type="button" onclick="window.editUser('${u.username}')" class="p-2 bg-accent/10 hover:bg-accent/20 rounded-lg transition text-accent" title="Editar">
+              <td class="p-2 sm:p-3 font-medium truncate max-w-[100px] sm:max-w-none">${u.name}</td>
+              <td class="p-2 sm:p-3 text-muted">${u.username}</td>
+              <td class="hidden sm:table-cell p-3 text-muted">${u.password}</td>
+              <td class="p-2 sm:p-3"><span class="text-[10px] sm:text-xs px-2 py-0.5 rounded-full ${u.role==='admin'?'bg-accent/20 text-accent':'bg-accent2/20 text-accent2'}">${u.role==='admin'?'Admin':'Cajero'}</span></td>
+              <td class="p-2 sm:p-3 flex justify-center gap-1 sm:gap-2">
+                <button type="button" onclick="window.editUser('${u.username}')" class="p-1.5 sm:p-2 bg-accent/10 hover:bg-accent/20 rounded-lg transition text-accent" title="Editar">
                   <i data-lucide="edit" class="w-4 h-4 pointer-events-none"></i>
                 </button>
-                ${u.isDefault && !u.raw ? '<span class="text-xs text-muted font-bold p-2">Fijo</span>' :
-                `<button type="button" onclick="window.deleteUser('${u.username}')" class="p-2 bg-danger/10 hover:bg-danger/20 rounded-lg transition text-danger" title="Eliminar">
+                ${u.isDefault && !u.raw ? '<span class="text-[10px] sm:text-xs text-muted font-bold p-1.5 sm:p-2">Fijo</span>' :
+                `<button type="button" onclick="window.deleteUser('${u.username}')" class="p-1.5 sm:p-2 bg-danger/10 hover:bg-danger/20 rounded-lg transition text-danger" title="Eliminar">
                   <i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i>
                 </button>`}
               </td>
@@ -1730,7 +1747,6 @@ function renderUsersAdmin(container) {
         document.getElementById('u-user').readOnly = false;
         document.getElementById('u-user').classList.remove('opacity-50', 'cursor-not-allowed');
       }
-      
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -1765,7 +1781,6 @@ function renderUsersAdmin(container) {
     if (!name || !username || !pass) { showToast('Completa todos los campos', 'warn'); return; }
     
     const freshUsers = getUsers();
-
     if (!editingUser) {
       if (freshUsers.find(u => u.username === username)) { 
         showToast('Ese ID de Usuario ya existe', 'warn'); 
@@ -1809,7 +1824,7 @@ function renderUsersAdmin(container) {
 }
 
 
-// ========== CARTERA DE CLIENTES Y CRÉDITOS (MINI POS + ELIMINACIÓN CON DEVOLUCIÓN DE STOCK) ==========
+// ========== CARTERA DE CLIENTES Y CRÉDITOS (TABLA RESPONSIVA) ==========
 function renderClientsAdmin(container) {
   const clients = records('client');
   const products = records('product').filter(p => p.stock > 0);
@@ -1827,43 +1842,49 @@ function renderClientsAdmin(container) {
       <h2 class="text-xl font-bold">Cartera de Clientes</h2>
     </div>
 
-    <div class="bg-surface rounded-xl p-5 border border-card shadow-sm">
+    <div class="bg-surface rounded-xl p-4 sm:p-5 border border-card shadow-sm">
       <h3 class="font-semibold mb-3 flex items-center gap-2"><i data-lucide="user-plus" class="w-4 h-4 text-accent"></i> Nuevo Cliente / Sucursal</h3>
-      <form id="client-form" class="flex flex-wrap gap-3 items-end">
-        <div class="flex-1 min-w-[200px]">
+      <form id="client-form" class="flex flex-col sm:flex-row flex-wrap gap-3 items-start sm:items-end">
+        <div class="w-full sm:flex-1">
           <label class="block text-xs text-muted mb-1">Nombre del Cliente / Sucursal *</label>
-          <input id="cli-name" class="w-full bg-card border border-card rounded-lg px-3 py-2 text-sm focus:border-accent focus:outline-none" placeholder="Ej: Sucursal Centro" required>
+          <input id="cli-name" class="w-full bg-card border border-card rounded-lg px-3 py-2.5 text-sm focus:border-accent focus:outline-none" placeholder="Ej: Sucursal Centro" required>
         </div>
-        <div class="flex-1 min-w-[150px]">
+        <div class="w-full sm:flex-1">
           <label class="block text-xs text-muted mb-1">Teléfono</label>
-          <input id="cli-phone" type="text" class="w-full bg-card border border-card rounded-lg px-3 py-2 text-sm focus:border-accent focus:outline-none" placeholder="Opcional">
+          <input id="cli-phone" type="text" class="w-full bg-card border border-card rounded-lg px-3 py-2.5 text-sm focus:border-accent focus:outline-none" placeholder="Opcional">
         </div>
-        <button type="submit" id="cli-btn" class="bg-accent text-bg font-semibold px-6 py-2 rounded-lg hover:opacity-90 transition text-sm h-[38px]">Registrar</button>
+        <button type="submit" id="cli-btn" class="w-full sm:w-auto bg-accent text-bg font-semibold px-6 py-2.5 rounded-lg hover:opacity-90 transition text-sm">Registrar</button>
       </form>
     </div>
 
-    <div class="bg-surface rounded-xl border border-card overflow-x-auto shadow-sm">
-      <table class="w-full text-sm min-w-[800px]">
-        <thead><tr class="text-muted text-left border-b border-card"><th class="p-3">Cliente</th><th class="p-3">Teléfono</th><th class="p-3">Deuda Actual</th><th class="p-3 text-center">Acciones Operativas</th></tr></thead>
+    <div class="bg-surface rounded-xl border border-card overflow-hidden shadow-sm">
+      <table class="w-full text-xs sm:text-sm text-left">
+        <thead class="bg-surface/50">
+          <tr class="text-muted border-b border-card">
+            <th class="p-2 sm:p-3">Cliente</th>
+            <th class="hidden sm:table-cell p-3">Teléfono</th>
+            <th class="p-2 sm:p-3">Deuda</th>
+            <th class="p-2 sm:p-3 text-center">Acciones</th>
+          </tr>
+        </thead>
         <tbody>
           ${clients.map(c => `
             <tr class="border-b border-card/50 hover:bg-card/30 transition">
-              <td class="p-3 font-medium">${c.name}</td>
-              <td class="p-3 text-muted">${c.phone || '-'}</td>
-              <td class="p-3 font-bold ${c.debt > 0 ? 'text-danger' : 'text-success'}">${currency(c.debt || 0)}</td>
-              <td class="p-3 flex justify-center gap-2">
-                <button type="button" onclick="window.openMiniPos('${c.id}')" class="flex items-center gap-1 bg-accent/10 text-accent px-3 py-1.5 rounded-lg hover:bg-accent hover:text-bg transition font-semibold text-xs" title="Nueva Venta a este cliente">
-                  <i data-lucide="shopping-cart" class="w-3.5 h-3.5 pointer-events-none"></i> Distribuir
+              <td class="p-2 sm:p-3 font-medium truncate max-w-[100px] sm:max-w-none">${c.name}</td>
+              <td class="hidden sm:table-cell p-3 text-muted">${c.phone || '-'}</td>
+              <td class="p-2 sm:p-3 font-bold ${c.debt > 0 ? 'text-danger' : 'text-success'}">${currency(c.debt || 0)}</td>
+              <td class="p-2 sm:p-3 flex justify-center gap-1 sm:gap-2">
+                <button type="button" onclick="window.openMiniPos('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-accent/10 text-accent rounded-lg hover:bg-accent hover:text-bg transition font-semibold text-xs" title="Distribuir">
+                  <i data-lucide="shopping-cart" class="w-4 h-4 sm:w-3.5 sm:h-3.5 pointer-events-none"></i> <span class="hidden lg:inline ml-1">Distribuir</span>
                 </button>
-                <button type="button" onclick="window.openAbono('${c.id}')" class="flex items-center gap-1 bg-success/10 text-success px-3 py-1.5 rounded-lg hover:bg-success hover:text-bg transition font-semibold text-xs ${c.debt > 0 ? '' : 'opacity-50 cursor-not-allowed'}" ${c.debt > 0 ? '' : 'disabled'} title="Abonar a cuenta">
-                  <i data-lucide="banknote" class="w-3.5 h-3.5 pointer-events-none"></i> Abonar
+                <button type="button" onclick="window.openAbono('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-success/10 text-success rounded-lg hover:bg-success hover:text-bg transition font-semibold text-xs ${c.debt > 0 ? '' : 'opacity-50 cursor-not-allowed'}" ${c.debt > 0 ? '' : 'disabled'} title="Abonar">
+                  <i data-lucide="banknote" class="w-4 h-4 sm:w-3.5 sm:h-3.5 pointer-events-none"></i> <span class="hidden lg:inline ml-1">Abonar</span>
                 </button>
-                <button type="button" onclick="window.openAbonoHistory('${c.id}')" class="flex items-center gap-1 bg-card border border-surface text-muted px-3 py-1.5 rounded-lg hover:bg-surface transition font-semibold text-xs" title="Ver Historial de Abonos">
-                  <i data-lucide="history" class="w-3.5 h-3.5 pointer-events-none"></i> Historial
+                <button type="button" onclick="window.openAbonoHistory('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-card border border-surface text-muted rounded-lg hover:bg-surface transition font-semibold text-xs" title="Historial">
+                  <i data-lucide="history" class="w-4 h-4 sm:w-3.5 sm:h-3.5 pointer-events-none"></i> <span class="hidden lg:inline ml-1">Historial</span>
                 </button>
-                
-                <button type="button" onclick="window.deleteClient('${c.id}')" class="flex items-center gap-1 bg-danger/10 text-danger px-3 py-1.5 rounded-lg hover:bg-danger hover:text-bg transition font-semibold text-xs" title="Eliminar Cliente y TODO su historial">
-                  <i data-lucide="user-x" class="w-3.5 h-3.5 pointer-events-none"></i> Eliminar
+                <button type="button" onclick="window.deleteClient('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-danger/10 text-danger rounded-lg hover:bg-danger hover:text-bg transition font-semibold text-xs" title="Eliminar Cliente">
+                  <i data-lucide="user-x" class="w-4 h-4 sm:w-3.5 sm:h-3.5 pointer-events-none"></i> <span class="hidden lg:inline ml-1">Eliminar</span>
                 </button>
               </td>
             </tr>`).join('') || '<tr><td colspan="4" class="p-6 text-center text-muted">No hay clientes registrados</td></tr>'}

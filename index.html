@@ -333,7 +333,10 @@ function getColeccion(tipo) {
     'cash_close': 'cortes_caja',
     'category': 'categorias',
     'config': 'configuracion',
-    'sys_file': 'archivos_sistema' // <--- LÍNEA NUEVA
+    'sys_file': 'archivos_sistema',
+    'client': 'clientes',          // <--- NUEVO
+    'credit_sale': 'creditos',     // <--- NUEVO
+    'payment': 'abonos'            // <--- NUEVO
   };
   return map[tipo] || 'registros_generales';
 }
@@ -667,6 +670,7 @@ function render() {
     case 'admin-sales': renderAdminShell(renderSalesReport); break;
     case 'admin-finance': renderAdminShell(renderFinance); break;
     case 'admin-users': renderAdminShell(renderUsersAdmin); break;
+    case 'admin-clients': renderAdminShell(renderClientsAdmin); break; // <--- LÍNEA NUEVA
     case 'admin-settings': renderAdminShell(renderSettings); break;
     case 'cashier-pos': renderCashierPOS(); break;
     case 'cashier-history': renderCashierPOS(); break;
@@ -746,6 +750,7 @@ function renderAdminShell(contentFn) {
     { id:'admin-sales', icon:'receipt', label:'Ventas y Reportes' },
     { id:'admin-finance', icon:'wallet', label:'Finanzas' },
     { id:'admin-users', icon:'users', label:'Usuarios' },
+    { id:'admin-clients', icon:'contact-2', label:'Cartera Clientes' }, // <--- LÍNEA NUEVA
     { id:'admin-settings', icon:'settings', label:'Config' },
   ];
   app.innerHTML = `
@@ -1286,13 +1291,15 @@ function renderSalesReport(container) {
             ${filteredSales.slice().reverse().map(s => `
               <tr class="border-b border-card/50 hover:bg-card/30 transition">
                 <td class="p-3 text-muted">${s.date ? s.date.slice(0,16).replace('T',' ') : '-'}</td>
-                <td class="p-3 font-medium">${s.name||'-'}</td>
+                <td class="p-3 font-medium">
+                  ${s.status === 'abono' ? `<span class="text-success flex items-center gap-1"><i data-lucide="hand-coins" class="w-3 h-3"></i> ${s.name}</span>` : s.name||'-'}
+                </td>
                 <td class="p-3">${s.quantity||1}</td>
                 <td class="p-3 font-semibold">${currency(s.total)}</td>
                 <td class="p-3"><span class="text-xs px-2 py-0.5 rounded-full ${s.payment_method==='Efectivo'?'bg-success/20 text-success':'bg-accent/20 text-accent'}">${s.payment_method||'-'}</span></td>
                 <td class="p-3 text-muted">${s.cashier||'-'}</td>
                 <td class="p-3 text-center">
-                  <button type="button" data-del-sale="${s.id}" class="p-2 hover:bg-danger/20 rounded-lg transition text-danger" title="Eliminar Venta">
+                  <button type="button" data-del-sale="${s.id}" class="p-2 hover:bg-danger/20 rounded-lg transition text-danger" title="Eliminar Registro">
                     <i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i>
                   </button>
                 </td>
@@ -1361,33 +1368,53 @@ function renderSalesReport(container) {
     };
   }
 
-  // === 3. INTERCEPTOR DE CLICS ACTUALIZADO (Eliminar Venta y Revertir Stock) ===
+  // === INTERCEPTOR DE CLICS (Eliminar Venta/Abono y Revertir Stock) ===
   container.onclick = (e) => {
-    // A) Eliminar Venta Histórica
+    // A) Eliminar Venta o Abono
     const delSaleBtn = e.target.closest('[data-del-sale]');
     if (delSaleBtn) {
       const s = sales.find(r => r.id === delSaleBtn.dataset.delSale);
       if (s) {
-        showConfirm(`¿Eliminar la venta de ${s.name} y restaurar el stock?`, async () => {
-          const product = allRecords.find(p => p.type === 'product' && p.name === s.name);
-          if (product) {
-            const qtyToRestore = Number(s.quantity || 1);
-            const newStock = Number(product.stock) + qtyToRestore;
-            await dbSdk.update({ ...product, stock: newStock });
-            await dbSdk.create({
-              type: 'movement', name: product.name, code: product.code, category: 'in',
-              quantity: qtyToRestore, total: newStock, cashier: currentUser?.username || 'admin',
-              description: 'Devolución por venta eliminada en Reportes', date: now(), 
-              buy_price: 0, sell_price: 0, stock: 0, min_stock: 0, payment_method: '', status: 'active', initial_cash: 0, final_cash: 0, sales_total: 0, amount: 0
-            });
+        const esAbono = s.status === 'abono';
+        const msg = esAbono 
+          ? `¿Eliminar este ABONO de ${currency(s.total)}? La deuda del cliente aumentará de nuevo y se borrará de su historial.`
+          : `¿Eliminar la venta de ${s.name} y restaurar el stock?`;
+
+        showConfirm(msg, async () => {
+          if (esAbono) {
+            // Lógica para abonos: restaurar deuda
+            const payment = allRecords.find(p => p.type === 'payment' && p.ticket_num === s.ticket_num);
+            if (payment) {
+              const client = allRecords.find(c => c.type === 'client' && c.id === payment.client_id);
+              if (client) {
+                const newDebt = (client.debt || 0) + payment.amount;
+                await dbSdk.update({ ...client, debt: newDebt });
+              }
+              await dbSdk.delete(payment);
+            }
+          } else {
+            // Lógica para ventas: restaurar stock
+            const product = allRecords.find(p => p.type === 'product' && p.name === s.name);
+            if (product) {
+              const qtyToRestore = Number(s.quantity || 1);
+              const newStock = Number(product.stock) + qtyToRestore;
+              await dbSdk.update({ ...product, stock: newStock });
+              await dbSdk.create({
+                type: 'movement', name: product.name, code: product.code, category: 'in',
+                quantity: qtyToRestore, total: newStock, cashier: currentUser?.username || 'admin',
+                description: 'Devolución por venta eliminada en Reportes', date: now(), 
+                buy_price: 0, sell_price: 0, stock: 0, min_stock: 0, payment_method: '', status: 'active', initial_cash: 0, final_cash: 0, sales_total: 0, amount: 0
+              });
+            }
           }
+          // Siempre borrar el registro de venta actual
           await dbSdk.delete(s);
-          showToast('Venta eliminada y stock restaurado', 'success');
+          showToast('Registro eliminado correctamente', 'success');
         });
       }
     }
 
-    // B) Revertir Movimiento de Stock (NUEVA LÓGICA MÁGICA)
+    // B) Revertir Movimiento de Stock
     const delMovBtn = e.target.closest('[data-del-mov]');
     if (delMovBtn) {
       const m = movements.find(r => r.id === delMovBtn.dataset.delMov);
@@ -1402,26 +1429,22 @@ function renderSalesReport(container) {
             const qty = Number(m.quantity || 0);
             let newStock = Number(product.stock);
             
-            // Matemáticas inversas
             if (isEntrada) {
-              newStock -= qty; // Para deshacer una entrada, restamos
-              if (newStock < 0) newStock = 0; // Candado para no dejar stock negativo
+              newStock -= qty; 
+              if (newStock < 0) newStock = 0; 
             } else {
-              newStock += qty; // Para deshacer una salida, sumamos
+              newStock += qty; 
             }
             
-            // Guardamos el nuevo stock en la base de datos
             await dbSdk.update({ ...product, stock: newStock });
           }
           
-          // Borramos el movimiento de la tabla y la base de datos
           await dbSdk.delete(m);
           showToast('Movimiento revertido correctamente', 'success');
         });
       }
     }
   };
-  // ==============================================================================
 
   draw();
 }
@@ -1778,6 +1801,818 @@ function renderUsersAdmin(container) {
     document.getElementById('u-btn').textContent = 'Agregar';
     document.getElementById('u-cancel').classList.add('hidden');
     btn.disabled = false;
+  };
+
+  lucide.createIcons();
+}
+
+
+// ========== CARTERA DE CLIENTES Y CRÉDITOS (MINI POS + ELIMINACIÓN CON DEVOLUCIÓN DE STOCK) ==========
+function renderClientsAdmin(container) {
+  const clients = records('client');
+  const products = records('product').filter(p => p.stock > 0);
+  window.miniPosCart = window.miniPosCart || [];
+  let currentMiniPosCategory = ''; 
+
+  const sysLogo = getSystemLogo();
+  const logoHtml = sysLogo 
+    ? `<img src="${sysLogo}" class="w-20 h-20 object-contain mx-auto mb-3 drop-shadow-md rounded-2xl bg-white p-2">`
+    : `<div class="w-16 h-16 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-3"><i data-lucide="hand-coins" class="w-8 h-8 text-success"></i></div>`;
+
+  container.innerHTML = `
+  <div class="fade-in space-y-6 pb-10 relative">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h2 class="text-xl font-bold">Cartera de Clientes</h2>
+    </div>
+
+    <div class="bg-surface rounded-xl p-5 border border-card shadow-sm">
+      <h3 class="font-semibold mb-3 flex items-center gap-2"><i data-lucide="user-plus" class="w-4 h-4 text-accent"></i> Nuevo Cliente / Sucursal</h3>
+      <form id="client-form" class="flex flex-wrap gap-3 items-end">
+        <div class="flex-1 min-w-[200px]">
+          <label class="block text-xs text-muted mb-1">Nombre del Cliente / Sucursal *</label>
+          <input id="cli-name" class="w-full bg-card border border-card rounded-lg px-3 py-2 text-sm focus:border-accent focus:outline-none" placeholder="Ej: Sucursal Centro" required>
+        </div>
+        <div class="flex-1 min-w-[150px]">
+          <label class="block text-xs text-muted mb-1">Teléfono</label>
+          <input id="cli-phone" type="text" class="w-full bg-card border border-card rounded-lg px-3 py-2 text-sm focus:border-accent focus:outline-none" placeholder="Opcional">
+        </div>
+        <button type="submit" id="cli-btn" class="bg-accent text-bg font-semibold px-6 py-2 rounded-lg hover:opacity-90 transition text-sm h-[38px]">Registrar</button>
+      </form>
+    </div>
+
+    <div class="bg-surface rounded-xl border border-card overflow-x-auto shadow-sm">
+      <table class="w-full text-sm min-w-[800px]">
+        <thead><tr class="text-muted text-left border-b border-card"><th class="p-3">Cliente</th><th class="p-3">Teléfono</th><th class="p-3">Deuda Actual</th><th class="p-3 text-center">Acciones Operativas</th></tr></thead>
+        <tbody>
+          ${clients.map(c => `
+            <tr class="border-b border-card/50 hover:bg-card/30 transition">
+              <td class="p-3 font-medium">${c.name}</td>
+              <td class="p-3 text-muted">${c.phone || '-'}</td>
+              <td class="p-3 font-bold ${c.debt > 0 ? 'text-danger' : 'text-success'}">${currency(c.debt || 0)}</td>
+              <td class="p-3 flex justify-center gap-2">
+                <button type="button" onclick="window.openMiniPos('${c.id}')" class="flex items-center gap-1 bg-accent/10 text-accent px-3 py-1.5 rounded-lg hover:bg-accent hover:text-bg transition font-semibold text-xs" title="Nueva Venta a este cliente">
+                  <i data-lucide="shopping-cart" class="w-3.5 h-3.5 pointer-events-none"></i> Distribuir
+                </button>
+                <button type="button" onclick="window.openAbono('${c.id}')" class="flex items-center gap-1 bg-success/10 text-success px-3 py-1.5 rounded-lg hover:bg-success hover:text-bg transition font-semibold text-xs ${c.debt > 0 ? '' : 'opacity-50 cursor-not-allowed'}" ${c.debt > 0 ? '' : 'disabled'} title="Abonar a cuenta">
+                  <i data-lucide="banknote" class="w-3.5 h-3.5 pointer-events-none"></i> Abonar
+                </button>
+                <button type="button" onclick="window.openAbonoHistory('${c.id}')" class="flex items-center gap-1 bg-card border border-surface text-muted px-3 py-1.5 rounded-lg hover:bg-surface transition font-semibold text-xs" title="Ver Historial de Abonos">
+                  <i data-lucide="history" class="w-3.5 h-3.5 pointer-events-none"></i> Historial
+                </button>
+                
+                <button type="button" onclick="window.deleteClient('${c.id}')" class="flex items-center gap-1 bg-danger/10 text-danger px-3 py-1.5 rounded-lg hover:bg-danger hover:text-bg transition font-semibold text-xs" title="Eliminar Cliente y TODO su historial">
+                  <i data-lucide="user-x" class="w-3.5 h-3.5 pointer-events-none"></i> Eliminar
+                </button>
+              </td>
+            </tr>`).join('') || '<tr><td colspan="4" class="p-6 text-center text-muted">No hay clientes registrados</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+
+    <div id="minipos-modal" class="fixed inset-0 z-[9990] hidden items-center justify-center p-4" style="background:rgba(0,0,0,.7)">
+      <div class="bg-surface rounded-2xl w-full max-w-7xl h-[90vh] flex flex-col shadow-2xl border border-card slide-up overflow-hidden">
+        
+        <div class="p-4 border-b border-card flex justify-between items-center bg-card rounded-t-2xl">
+          <div>
+            <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="store" class="text-accent w-5 h-5"></i> Distribución / Venta</h2>
+            <p class="text-sm text-muted mt-1">Cliente: <span id="minipos-client-name" class="font-bold text-txt"></span></p>
+          </div>
+          <button type="button" onclick="window.closeMiniPos()" class="p-2 bg-surface rounded-lg text-muted hover:text-danger transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        
+        <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+          <div class="flex-1 p-4 border-b lg:border-b-0 lg:border-r border-card flex flex-col overflow-hidden">
+            <div class="flex-none mb-3">
+              <label class="block text-xs text-muted mb-1">Buscar o Escanear Producto</label>
+              <div class="relative">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted"></i>
+                <input id="minipos-search" class="w-full bg-card border border-card rounded-lg pl-9 pr-3 py-3 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50" placeholder="Escanear código o nombre del producto..." autocomplete="off">
+              </div>
+            </div>
+            <div id="minipos-categories" class="flex gap-2 overflow-x-auto pb-2 shrink-0 mb-2" style="scrollbar-width: none;"></div>
+            <div id="minipos-products-grid" class="flex-1 overflow-y-auto grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 content-start pr-1 pb-4">
+            </div>
+          </div>
+          
+          <div class="w-full lg:w-[400px] p-4 bg-surface/50 flex flex-col justify-between overflow-hidden">
+            <div class="flex-1 flex flex-col gap-2 overflow-hidden mb-6">
+              <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="shopping-cart" class="w-5 h-5 text-accent"></i> Carrito de Venta</h3>
+              <div class="flex-1 overflow-y-auto pr-1 space-y-2" id="minipos-cart-list"></div>
+            </div>
+            
+            <div class="flex-none border-t border-card/50 pt-4">
+              <div class="text-sm text-muted mb-1">Total a cobrar</div>
+              <div id="minipos-total" class="text-5xl font-extrabold text-success mb-6">$0.00</div>
+              <label class="block text-sm font-semibold mb-2">Tipo de Pago:</label>
+              <div class="flex gap-2 mb-6">
+                <button type="button" id="btn-pay-contado" onclick="window.setMiniPosPayType('contado')" class="flex-1 py-3 rounded-xl border-2 border-success bg-success/10 text-success font-bold transition">Contado</button>
+                <button type="button" id="btn-pay-credito" onclick="window.setMiniPosPayType('credito')" class="flex-1 py-3 rounded-xl border-2 border-transparent bg-card text-muted hover:bg-surface font-bold transition">Crédito</button>
+              </div>
+              <button type="button" id="minipos-process-btn" onclick="window.processMiniPos()" class="w-full bg-warn text-bg font-bold py-4 rounded-xl hover:opacity-90 transition disabled:opacity-50 text-lg shadow-lg">
+                Procesar Operación
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="abono-modal" class="fixed inset-0 z-[9990] hidden items-center justify-center p-4" style="background:rgba(0,0,0,.7)">
+      <div class="bg-surface rounded-2xl w-full max-w-sm shadow-2xl border border-card slide-up p-6 text-center">
+        ${logoHtml}
+        <h2 class="text-xl font-bold mb-1">Recibir Abono</h2>
+        <p class="text-sm text-muted mb-4" id="abono-client-name"></p>
+        <div class="bg-card rounded-xl p-3 mb-5 border border-surface">
+          <div class="text-xs text-muted">Deuda Actual:</div>
+          <div id="abono-debt" class="text-2xl font-bold text-danger"></div>
+        </div>
+        <div class="text-left mb-6">
+          <label class="block text-sm font-semibold mb-2">Monto a abonar ($)</label>
+          <input id="abono-amount" type="number" step="0.01" class="w-full bg-card border-2 border-success/50 rounded-xl px-4 py-3 text-center text-2xl font-bold focus:border-success focus:outline-none" placeholder="0.00">
+        </div>
+        <div class="flex gap-3">
+          <button type="button" onclick="window.closeAbono()" class="flex-1 py-3 rounded-xl bg-card text-muted font-semibold hover:bg-bg transition">Cancelar</button> 
+          <button type="button" id="abono-process-btn" onclick="window.processAbono()" class="flex-1 py-3 rounded-xl bg-success text-bg font-bold hover:opacity-90 transition shadow-lg">Aplicar Pago</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="abono-history-modal" class="fixed inset-0 z-[9991] hidden items-center justify-center p-4" style="background:rgba(0,0,0,.7)">
+      <div class="bg-surface rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl border border-card slide-up">
+        <div class="p-4 border-b border-card flex justify-between items-center bg-card rounded-t-2xl">
+          <h2 class="text-lg font-bold flex items-center gap-2"><i data-lucide="history" class="text-accent w-5 h-5"></i> Historial de Abonos: <span id="history-client-name" class="text-txt"></span></h2>
+          <button type="button" onclick="window.closeAbonoHistory()" class="p-2 bg-surface rounded-lg text-muted hover:text-danger transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-4 flex-1 overflow-y-auto">
+          <table class="w-full text-sm">
+            <thead><tr class="text-muted text-left border-b border-card"><th class="pb-2">Fecha</th><th class="pb-2">Folio de Ticket</th><th class="pb-2">Monto del Abono</th><th class="pb-2 text-center">Acciones</th></tr></thead>
+            <tbody id="abono-history-list"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="edit-abono-modal" class="fixed inset-0 z-[9995] hidden items-center justify-center p-4" style="background:rgba(0,0,0,.8)">
+      <div class="bg-surface rounded-2xl w-full max-w-sm shadow-2xl border border-card slide-up p-6 text-center">
+        <h2 class="text-xl font-bold mb-4">Editar Cantidad del Abono</h2>
+        <p class="text-xs text-muted mb-4">Al guardar, la deuda del cliente se reajustará automáticamente.</p>
+        <label class="block text-sm font-semibold mb-2 text-left">Nuevo Monto Real ($)</label>
+        <input id="edit-abono-amount" type="number" step="0.01" class="w-full bg-card border-2 border-accent/50 rounded-xl px-4 py-3 text-center text-2xl font-bold focus:border-accent focus:outline-none mb-6">
+        <div class="flex gap-3">
+          <button type="button" onclick="document.getElementById('edit-abono-modal').classList.replace('flex','hidden')" class="flex-1 py-3 rounded-xl bg-card text-muted font-semibold hover:bg-bg transition">Cancelar</button>
+          <button type="button" id="btn-save-edit-abono" class="flex-1 py-3 rounded-xl bg-accent text-bg font-bold hover:opacity-90 transition shadow-lg">Guardar Ajuste</button>
+        </div>
+      </div>
+    </div>
+
+  </div>`;
+
+  let activeClient = null;
+  let payType = 'contado';
+
+  // Lógica Agregar Cliente
+  document.getElementById('client-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('cli-btn');
+    btn.disabled = true; btn.textContent = '...';
+    
+    await dbSdk.create({
+      type: 'client', 
+      name: document.getElementById('cli-name').value.trim(), 
+      phone: document.getElementById('cli-phone').value.trim(),
+      debt: 0,
+      date: now()
+    });
+    
+    showToast('Cliente agregado');
+    renderClientsAdmin(container);
+  };
+
+  // NUEVA LÓGICA: ELIMINAR CLIENTE EN CASCADA CON RESTAURACIÓN DE STOCK
+  window.deleteClient = (clientId) => {
+    const client = clients.find(c => c.id === clientId);
+    if (!client) return;
+
+    showConfirm(`¿Eliminar DEFINITIVAMENTE al cliente "${client.name}"? Esto borrará su historial y RESTAURARÁ el stock de sus compras al inventario.`, async () => {
+      showToast('Restaurando stock y eliminando...', 'info');
+
+      // Buscar ventas normales, ventas a crédito, abonos del historial, Y las "ventas fantasmas" de caja.
+      const relatedSales = records('sale').filter(s => s.client_id === clientId || (s.status === 'abono' && s.name.includes(client.name)));
+      const relatedCreditSales = records('credit_sale').filter(s => s.client_id === clientId);
+      const relatedPayments = records('payment').filter(p => p.client_id === clientId);
+
+      try {
+        // 1. Restaurar el stock de las ventas (normales y a crédito) que NO sean abonos
+        const allProductSales = [...relatedSales, ...relatedCreditSales].filter(s => s.status !== 'abono');
+        
+        for (const sale of allProductSales) {
+          const product = allRecords.find(p => p.type === 'product' && p.name === sale.name);
+          if (product) {
+            const qtyToRestore = Number(sale.quantity || 1);
+            const newStock = Number(product.stock) + qtyToRestore;
+            
+            // Actualizar el producto en la BD
+            await dbSdk.update({ ...product, stock: newStock });
+            
+            // Registrar el movimiento de entrada en el historial de stock
+            await dbSdk.create({
+              type: 'movement', name: product.name, code: product.code, category: 'in',
+              quantity: qtyToRestore, total: newStock, cashier: currentUser?.username || 'admin',
+              description: `Devolución por eliminación del cliente ${client.name}`, date: now(),
+              buy_price: 0, sell_price: 0, stock: 0, min_stock: 0, payment_method: '', status: 'active', initial_cash: 0, final_cash: 0, sales_total: 0, amount: 0
+            });
+          }
+        }
+
+        // 2. Borrar todos los registros relacionados uno por uno
+        const allRelated = [...relatedSales, ...relatedCreditSales, ...relatedPayments];
+        for (const record of allRelated) {
+          await dbSdk.delete(record);
+        }
+        
+        // 3. Borrar al cliente
+        await dbSdk.delete(client);
+
+        showToast('Cliente eliminado y stock restaurado', 'success');
+        renderClientsAdmin(container);
+      } catch (e) {
+        console.error("Error eliminando cliente:", e);
+        showToast('Hubo un error al eliminar. Revisa tu conexión.', 'error');
+      }
+    });
+  };
+
+  // SCRIPT MÁGICO: BÚSQUEDA Y ESCÁNER EN TIEMPO REAL
+  const miniPosSearchInput = document.getElementById('minipos-search');
+
+  window.refocusMiniPosSearch = () => {
+    if (document.getElementById('minipos-modal').classList.contains('flex')) {
+      if (!document.getElementById('receipt-modal').classList.contains('flex')) {
+          miniPosSearchInput.focus();
+      }
+    }
+  };
+
+  miniPosSearchInput.addEventListener('input', () => {
+    window.drawMiniPosProductsGrid();
+  });
+
+  miniPosSearchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      
+      const value = miniPosSearchInput.value.trim().toLowerCase();
+      if (!value) return;
+
+      const prod = products.find(p => 
+        (p.code && p.code.toLowerCase() === value) || 
+        (p.name && p.name.toLowerCase() === value)
+      );
+
+      if (prod) {
+        window.addDirectlyToMiniPosCart(prod.id); 
+        miniPosSearchInput.value = ''; 
+        window.drawMiniPosProductsGrid(); 
+      } else {
+        showToast('Producto no encontrado o sin stock', 'error');
+        miniPosSearchInput.select(); 
+      }
+    }
+  });
+
+  document.getElementById('minipos-modal').addEventListener('transitionend', window.refocusMiniPosSearch);
+  document.getElementById('minipos-modal').addEventListener('click', (e) => {
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
+      window.refocusMiniPosSearch();
+    }
+  });
+
+  // ===== FUNCIONES MINI POS (CUADRÍCULA DIRECTA) =====
+  window.openMiniPos = (clientId) => {
+    activeClient = clients.find(c => c.id === clientId);
+    if(!activeClient) return;
+    document.getElementById('minipos-client-name').textContent = activeClient.name;
+    window.miniPosCart = [];
+    currentMiniPosCategory = '';
+    window.setMiniPosPayType('contado');
+    
+    window.renderMiniPosCategories();
+    window.drawMiniPosProductsGrid();
+    window.renderMiniPosCart();
+    
+    document.getElementById('minipos-modal').classList.remove('hidden');
+    document.getElementById('minipos-modal').classList.add('flex');
+    
+    setTimeout(window.refocusMiniPosSearch, 200);
+  };
+
+  window.closeMiniPos = () => {
+    document.getElementById('minipos-modal').classList.remove('flex');
+    document.getElementById('minipos-modal').classList.add('hidden');
+    activeClient = null;
+  };
+
+  window.renderMiniPosCategories = () => {
+    const catContainer = document.getElementById('minipos-categories');
+    if (!catContainer) return;
+    const categories = records('category');
+    const allCats = [{id: 'all', name: 'Todas'}, ...categories];
+
+    catContainer.innerHTML = allCats.map(c => {
+       const val = c.id === 'all' ? '' : c.name;
+       const isSelected = currentMiniPosCategory === val;
+       const bgClass = isSelected ? 'bg-accent text-bg font-bold shadow-md' : 'bg-card text-muted hover:bg-surface border border-card';
+       return `<button type="button" data-minicat="${val}" class="whitespace-nowrap px-4 py-2 rounded-xl text-sm transition ${bgClass}">${c.name}</button>`;
+    }).join('');
+
+    catContainer.querySelectorAll('[data-minicat]').forEach(btn => {
+       btn.onclick = () => {
+          currentMiniPosCategory = btn.dataset.minicat;
+          window.renderMiniPosCategories(); 
+          window.drawMiniPosProductsGrid(); 
+          window.refocusMiniPosSearch();
+       };
+    });
+  };
+
+  window.drawMiniPosProductsGrid = () => {
+    const grid = document.getElementById('minipos-products-grid');
+    if (!grid) return;
+    
+    const term = miniPosSearchInput.value.toLowerCase();
+
+    const filtered = products.filter(p => {
+      const matchesSearch = !term || p.name.toLowerCase().includes(term) || (p.code||'').toLowerCase().includes(term);
+      const matchesCat = !currentMiniPosCategory || p.category === currentMiniPosCategory;
+      return matchesSearch && matchesCat;
+    });
+
+    grid.innerHTML = filtered.map(p => `
+      <button type="button" onclick="window.addDirectlyToMiniPosCart('${p.id}')" class="bg-card hover:bg-surface border border-card rounded-xl p-2.5 text-center flex flex-col items-center gap-1.5 transition group relative overflow-hidden shadow-sm">
+        ${p.stock <= (p.min_stock || 5) ? `<div class="absolute top-0 right-0 bg-warn text-bg text-[10px] px-1.5 py-0.5 font-bold rounded-bl-lg">Bajo Stock</div>` : ''}
+        
+        <div class="w-16 h-16 sm:w-20 sm:h-20 bg-surface rounded-lg overflow-hidden shrink-0 flex items-center justify-center p-1 border border-card">
+          ${p.image ? `<img src="${p.image}" class="w-full h-full object-contain">` : `<i data-lucide="image" class="text-muted w-6 h-6"></i>`}
+        </div>
+        
+        <div class="flex-1 w-full flex flex-col justify-between mt-1">
+          <div class="text-xs font-bold group-hover:text-accent transition leading-tight line-clamp-2">${p.name}</div>
+          <div class="text-sm font-extrabold text-success mt-1">${currency(p.sell_price)}</div>
+        </div>
+      </button>`).join('') || '<div class="col-span-full text-center text-muted py-8 text-sm">No se encontraron productos.</div>';
+      
+    lucide.createIcons();
+  };
+
+  window.addDirectlyToMiniPosCart = (productId) => {
+    const prod = products.find(p => p.id === productId);
+    if (!prod) return;
+    
+    const existing = window.miniPosCart.find(c => c.id === prod.id);
+    
+    if (existing) {
+      if (existing.qty < prod.stock) {
+        existing.qty++;
+      } else {
+        return showToast(`Stock insuficiente (Max: ${prod.stock})`, 'error');
+      }
+    } else {
+      if (prod.stock >= 1) {
+        window.miniPosCart.push({ ...prod, qty: 1 });
+      } else {
+        return showToast(`Producto sin stock`, 'error');
+      }
+    }
+    
+    window.renderMiniPosCart();
+    window.refocusMiniPosSearch();
+  };
+
+  window.removeMiniPosItem = (index) => {
+    window.miniPosCart.splice(index, 1);
+    window.renderMiniPosCart();
+    window.refocusMiniPosSearch(); 
+  };
+
+  window.renderMiniPosCart = () => {
+    const list = document.getElementById('minipos-cart-list');
+    const totalEl = document.getElementById('minipos-total');
+    let total = 0;
+
+    list.innerHTML = window.miniPosCart.map((item, i) => {
+      total += item.sell_price * item.qty;
+      return `
+      <div class="bg-card rounded-lg p-3 flex flex-col gap-2 border border-surface shadow-sm mb-2">
+        <div class="flex justify-between items-start">
+          <div class="text-sm font-medium leading-tight">${item.name}</div>
+          <button type="button" onclick="window.removeMiniPosItem(${i})" class="text-muted hover:text-danger ml-2"><i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i></button>
+        </div>
+        <div class="flex justify-between items-center mt-1">
+          <div class="flex items-center gap-1 bg-surface border border-card rounded-lg p-1">
+            <button type="button" data-minipos-minus="${i}" class="w-7 h-7 rounded flex items-center justify-center hover:bg-danger/20 transition text-sm text-muted hover:text-danger">−</button>
+            <input type="number" step="0.01" data-minipos-edit="${i}" value="${item.qty}" class="w-12 bg-transparent text-center font-bold text-sm focus:outline-none focus:text-accent" onclick="this.select()">
+            <button type="button" data-minipos-plus="${i}" class="w-7 h-7 rounded flex items-center justify-center hover:bg-success/20 transition text-sm text-muted hover:text-success">+</button>
+          </div>
+          <div class="font-bold text-success text-right text-base">${currency(item.sell_price * item.qty)}</div>
+        </div>
+      </div>`;
+    }).join('') || '<div class="text-center text-muted text-sm mt-10">Agrega productos para distribuir</div>';
+    
+    totalEl.textContent = currency(total);
+    lucide.createIcons();
+    
+    const btnProcess = document.getElementById('minipos-process-btn');
+    btnProcess.disabled = window.miniPosCart.length === 0;
+
+    list.querySelectorAll('[data-minipos-minus]').forEach(b => {
+       b.onclick = () => {
+          const idx = parseInt(b.dataset.miniposMinus);
+          window.miniPosCart[idx].qty--;
+          if(window.miniPosCart[idx].qty <= 0) window.miniPosCart.splice(idx, 1);
+          window.renderMiniPosCart();
+          window.refocusMiniPosSearch();
+       };
+    });
+
+    list.querySelectorAll('[data-minipos-plus]').forEach(b => {
+       b.onclick = () => {
+          const idx = parseInt(b.dataset.miniposPlus);
+          if(window.miniPosCart[idx].qty < window.miniPosCart[idx].stock) {
+              window.miniPosCart[idx].qty++;
+          } else {
+              showToast('Stock máximo superado', 'warn');
+          }
+          window.renderMiniPosCart();
+          window.refocusMiniPosSearch();
+       };
+    });
+
+    list.querySelectorAll('[data-minipos-edit]').forEach(input => {
+       input.addEventListener('change', (e) => {
+          const idx = parseInt(e.target.dataset.miniposEdit);
+          let val = parseFloat(e.target.value);
+          if(isNaN(val) || val <= 0) {
+             window.miniPosCart.splice(idx, 1);
+          } else if(val > window.miniPosCart[idx].stock) {
+             showToast('Stock máximo superado', 'warn');
+             window.miniPosCart[idx].qty = window.miniPosCart[idx].stock;
+          } else {
+             window.miniPosCart[idx].qty = val;
+          }
+          window.renderMiniPosCart();
+          window.refocusMiniPosSearch();
+       });
+       input.addEventListener('focus', () => { miniPosSearchInput.blur(); }); 
+    });
+  };
+
+  window.setMiniPosPayType = (type) => {
+    payType = type;
+    const bCon = document.getElementById('btn-pay-contado');
+    const bCre = document.getElementById('btn-pay-credito');
+    
+    if(type === 'contado') {
+      bCon.className = "flex-1 py-3 rounded-xl border-2 border-success bg-success/10 text-success font-bold transition";
+      bCre.className = "flex-1 py-3 rounded-xl border-2 border-transparent bg-card text-muted hover:bg-surface font-bold transition";
+    } else {
+      bCre.className = "flex-1 py-3 rounded-xl border-2 border-accent bg-accent/10 text-accent font-bold transition";
+      bCon.className = "flex-1 py-3 rounded-xl border-2 border-transparent bg-card text-muted hover:bg-surface font-bold transition";
+    }
+    window.refocusMiniPosSearch(); 
+  };
+
+  window.processMiniPos = async () => {
+    if(!window.miniPosCart.length || !activeClient) return;
+    const btn = document.getElementById('minipos-process-btn');
+    btn.disabled = true; btn.textContent = 'Procesando...';
+    
+    let total = window.miniPosCart.reduce((a, b) => a + (b.sell_price * b.qty), 0);
+    const ticketNum = Math.floor(Math.random() * 90000) + 10000; 
+
+    try {
+      for (const item of window.miniPosCart) {
+        const prodRec = allRecords.find(r => r.id === item.id);
+        if (prodRec) await dbSdk.update({ ...prodRec, stock: Math.max(0, prodRec.stock - item.qty) });
+        
+        await dbSdk.create({
+          type: payType === 'contado' ? 'sale' : 'credit_sale', 
+          name: item.name, buy_price: item.buy_price||0, sell_price: item.sell_price,
+          quantity: item.qty, total: item.sell_price * item.qty, payment_method: payType,
+          cashier: currentUser?.username || 'admin', date: now(), ticket_num: ticketNum,
+          client_name: activeClient.name, client_id: activeClient.id
+        });
+      }
+
+      if (payType === 'credito') {
+        await dbSdk.update({ ...activeClient, debt: (activeClient.debt || 0) + total });
+      }
+
+      const isCredit = payType === 'credito';
+      const itemsHtml = window.miniPosCart.map(item => `
+        <div class="flex justify-between items-start">
+          <span class="w-8">${item.qty}x</span>
+          <span class="flex-1 text-left uppercase truncate px-1">${item.name}</span>
+          <span class="w-16 text-right">${currency(item.sell_price * item.qty)}</span>
+        </div>
+      `).join('');
+
+      const sysLogo = getSystemLogo();
+      const logoPrintHtml = sysLogo ? `<img src="${sysLogo}" style="max-width: 140px; max-height: 80px; margin: 0 auto 10px auto; display: block; object-fit: contain;">` : '';
+      
+      const ticketHtml = `
+       <div class="text-center mb-3">
+        ${logoPrintHtml}
+        <div class="text-2xl font-bold tracking-tight uppercase">${bizName()}</div>
+        <div class="text-xs mt-1">
+         <div class="font-bold">${isCredit ? 'NOTA DE REMISIÓN / CRÉDITO' : 'TICKET DE VENTA'}</div>
+         <div>Cliente: <span class="font-bold uppercase">${activeClient.name}</span></div>
+         <div class="font-bold mt-1">${new Date().toLocaleString('es-MX')}</div>
+         <div>FOLIO #${ticketNum}</div>
+        </div>
+       </div>
+       <div class="w-full border-t-2 border-dashed border-gray-400 mb-2"></div>
+       <div class="w-full flex justify-between font-bold text-xs mb-1">
+         <span>CANT</span><span class="flex-1 ml-2">DESCRIPCIÓN</span><span class="text-right w-16">IMPORTE</span>
+       </div>
+       <div class="w-full text-xs space-y-1">${itemsHtml}</div>
+       <div class="w-full border-t-2 border-dashed border-gray-400 mt-2 mb-2"></div>
+       <div class="w-full flex justify-between items-center text-base font-bold mb-2">
+         <span>TOTAL:</span><span class="text-lg">${currency(total)}</span>
+       </div>
+       <div class="w-full border-t border-solid border-gray-300 mb-2"></div>
+       <div class="w-full text-xs space-y-1">
+        <div class="font-bold text-center mb-1">ESTADO DE CUENTA</div>
+        <div class="flex justify-between"><span>CONDICIÓN:</span><span class="font-bold uppercase">${isCredit ? 'A CRÉDITO' : 'PAGADO (CONTADO)'}</span></div>
+        ${isCredit ? `<div class="flex justify-between font-bold text-sm mt-1 text-danger"><span>NUEVO SALDO DEUDOR:</span><span>${currency((activeClient.debt || 0) + total)}</span></div>` : ''}
+       </div>
+       <div class="w-full border-t-2 border-dashed border-gray-400 mt-3 mb-2"></div>
+       <div class="text-center text-[10px] text-gray-500 mt-2">Firma de recibido o conformidad del cliente.</div>
+       <div class="w-3/4 mx-auto border-b border-gray-400 mt-8"></div>
+      `;
+
+      document.getElementById('printable-ticket').innerHTML = ticketHtml;
+      window.closeMiniPos();
+      
+      document.getElementById('receipt-modal').classList.remove('hidden');
+      document.getElementById('receipt-modal').classList.add('flex');
+      
+      document.getElementById('receipt-close').onclick = () => {
+        document.getElementById('receipt-modal').classList.remove('flex');
+        document.getElementById('receipt-modal').classList.add('hidden');
+        showToast(isCredit ? 'Crédito registrado' : 'Venta completada', 'success');
+        renderClientsAdmin(container);
+      };
+
+    } catch (e) {
+      console.error(e);
+      showToast('Error procesando operación', 'error');
+      btn.disabled = false; btn.textContent = 'Procesar Operación';
+    }
+  };
+
+  // ===== FUNCIONES ABONOS E HISTORIAL =====
+  window.openAbono = (clientId) => {
+    activeClient = clients.find(c => c.id === clientId);
+    if(!activeClient || activeClient.debt <= 0) return;
+    document.getElementById('abono-client-name').textContent = activeClient.name;
+    document.getElementById('abono-debt').textContent = currency(activeClient.debt);
+    document.getElementById('abono-amount').value = ''; 
+    document.getElementById('abono-modal').classList.remove('hidden');
+    document.getElementById('abono-modal').classList.add('flex');
+    setTimeout(() => document.getElementById('abono-amount').focus(), 100);
+  };
+
+  window.closeAbono = () => {
+    document.getElementById('abono-modal').classList.remove('flex');
+    document.getElementById('abono-modal').classList.add('hidden');
+    activeClient = null;
+  };
+
+  window.processAbono = async () => {
+    const amount = parseFloat(document.getElementById('abono-amount').value);
+    if(!amount || amount <= 0 || !activeClient) return showToast('Monto inválido', 'warn');
+    if(amount > activeClient.debt) return showToast('El abono supera la deuda', 'warn');
+
+    const btn = document.getElementById('abono-process-btn');
+    btn.disabled = true; btn.textContent = '...';
+
+    const newDebt = activeClient.debt - amount;
+    const ticketNum = Math.floor(Math.random() * 90000) + 10000;
+
+    try {
+      await dbSdk.create({
+        type: 'payment', name: `Abono de ${activeClient.name}`, amount: amount,
+        client_id: activeClient.id, client_name: activeClient.name,
+        date: now(), ticket_num: ticketNum, cashier: currentUser?.username || 'admin',
+        remaining_debt: newDebt
+      });
+      await dbSdk.create({
+         type: 'sale', name: `ABONO A CUENTA: ${activeClient.name}`, quantity: 1,
+         total: amount, payment_method: 'Efectivo', cashier: currentUser?.username || 'admin',
+         date: now(), ticket_num: ticketNum, status: 'abono'
+      });
+      await dbSdk.update({ ...activeClient, debt: newDebt });
+
+      const isSettled = newDebt === 0;
+      const sysLogo = getSystemLogo();
+      const logoPrintHtml = sysLogo ? `<img src="${sysLogo}" style="max-width: 140px; max-height: 80px; margin: 0 auto 10px auto; display: block; object-fit: contain;">` : '';
+      
+      const ticketHtml = `
+       <div class="text-center mb-3">
+        ${logoPrintHtml}
+        <div class="text-2xl font-bold tracking-tight uppercase">${bizName()}</div>
+        <div class="text-xs mt-1">
+         <div class="font-bold">${isSettled ? 'COMPROBANTE DE LIQUIDACIÓN' : 'RECIBO DE PAGO / ABONO'}</div>
+         <div>Cliente: <span class="font-bold uppercase">${activeClient.name}</span></div>
+         <div class="font-bold mt-1">${new Date().toLocaleString('es-MX')}</div>
+         <div>FOLIO #${ticketNum}</div>
+        </div>
+       </div>
+       <div class="w-full border-t-2 border-dashed border-gray-400 my-4"></div>
+       <div class="w-full text-sm space-y-2">
+        <div class="flex justify-between"><span>Deuda Anterior:</span><span>${currency(activeClient.debt)}</span></div>
+        <div class="flex justify-between font-bold text-success text-base"><span>SU PAGO (ABONO):</span><span>- ${currency(amount)}</span></div>
+        <div class="w-full border-t border-solid border-gray-300 my-2"></div>
+        <div class="flex justify-between font-bold text-base">
+          <span>SALDO RESTANTE:</span>
+          <span class="${isSettled ? 'text-success' : 'text-danger'}">${currency(newDebt)}</span>
+        </div>
+       </div>
+       <div class="w-full border-t-2 border-dashed border-gray-400 mt-4 mb-2"></div>
+       <div class="text-center text-xs mt-4 font-bold">
+        ${isSettled ? '¡CUENTA LIQUIDADA TOTALMENTE! GRACIAS.' : 'Gracias por su abono.'}
+       </div>
+      `;
+
+      document.getElementById('printable-ticket').innerHTML = ticketHtml;
+      window.closeAbono();
+      
+      document.getElementById('receipt-modal').classList.remove('hidden');
+      document.getElementById('receipt-modal').classList.add('flex');
+      
+      document.getElementById('receipt-close').onclick = () => {
+        document.getElementById('receipt-modal').classList.remove('flex');
+        document.getElementById('receipt-modal').classList.add('hidden');
+        showToast(isSettled ? 'Cuenta liquidada' : 'Abono recibido', 'success');
+        renderClientsAdmin(container);
+      };
+    } catch (e) {
+      console.error(e);
+      showToast('Error al procesar abono', 'error');
+      btn.disabled = false; btn.textContent = 'Aplicar Pago';
+    }
+  };
+
+  window.openAbonoHistory = (clientId) => {
+    activeClient = clients.find(c => c.id === clientId);
+    if (!activeClient) return;
+    document.getElementById('history-client-name').textContent = activeClient.name;
+    window.renderAbonoHistory();
+    document.getElementById('abono-history-modal').classList.remove('hidden');
+    document.getElementById('abono-history-modal').classList.add('flex');
+  };
+
+  window.closeAbonoHistory = () => {
+    document.getElementById('abono-history-modal').classList.remove('flex');
+    document.getElementById('abono-history-modal').classList.add('hidden');
+    activeClient = null;
+  };
+
+  window.renderAbonoHistory = () => {
+    if (!activeClient) return;
+    const clientPayments = records('payment').filter(p => p.client_id === activeClient.id).sort((a,b) => new Date(b.date) - new Date(a.date));
+    const list = document.getElementById('abono-history-list');
+    
+    list.innerHTML = clientPayments.map(p => `
+      <tr class="border-b border-card/50 hover:bg-surface transition">
+        <td class="py-3 text-muted">${p.date ? p.date.slice(0,16).replace('T', ' ') : '-'}</td>
+        <td class="py-3 text-muted">#${p.ticket_num || '-'}</td>
+        <td class="py-3 font-bold text-success">${currency(p.amount)}</td>
+        <td class="py-3 flex justify-center gap-2">
+          
+          <button type="button" onclick="window.viewAbonoTicket('${p.id}')" class="px-2.5 py-1.5 bg-surface border border-card text-txt rounded-lg hover:bg-card transition flex items-center gap-1.5 text-xs font-semibold" title="Ver Ticket Original">
+            <i data-lucide="receipt" class="w-3.5 h-3.5 pointer-events-none"></i> Ticket
+          </button>
+          
+          <button type="button" onclick="window.editAbono('${p.id}')" class="px-2.5 py-1.5 bg-accent/10 text-accent rounded-lg hover:bg-accent hover:text-bg transition flex items-center gap-1.5 text-xs font-semibold" title="Ajustar cantidad del Abono">
+            <i data-lucide="edit" class="w-3.5 h-3.5 pointer-events-none"></i> Editar
+          </button>
+          
+          <button type="button" onclick="window.deleteAbono('${p.id}')" class="p-1.5 bg-danger/10 text-danger rounded-lg hover:bg-danger hover:text-bg transition flex items-center justify-center" title="Eliminar Abono por error">
+            <i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i>
+          </button>
+
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="4" class="py-6 text-center text-muted">Aún no hay abonos registrados para este cliente.</td></tr>';
+    lucide.createIcons();
+  };
+
+  window.viewAbonoTicket = (paymentId) => {
+    const payment = records('payment').find(p => p.id === paymentId);
+    if (!payment) return;
+    
+    const sysLogo = getSystemLogo();
+    const logoPrintHtml = sysLogo ? `<img src="${sysLogo}" style="max-width: 140px; max-height: 80px; margin: 0 auto 10px auto; display: block; object-fit: contain;">` : '';
+    
+    const ticketHtml = `
+     <div class="text-center mb-3">
+      ${logoPrintHtml}
+      <div class="text-2xl font-bold tracking-tight uppercase">${bizName()}</div>
+      <div class="text-xs mt-1">
+       <div class="font-bold">RECIBO DE PAGO / ABONO (COPIA)</div>
+       <div>Cliente: <span class="font-bold uppercase">${payment.client_name}</span></div>
+       <div class="font-bold mt-1">${new Date(payment.date).toLocaleString('es-MX')}</div>
+       <div>FOLIO #${payment.ticket_num || '-'}</div>
+      </div>
+     </div>
+     <div class="w-full border-t-2 border-dashed border-gray-400 my-4"></div>
+     <div class="w-full text-sm space-y-2">
+      <div class="flex justify-between font-bold text-success text-base"><span>PAGO (ABONO):</span><span>${currency(payment.amount)}</span></div>
+      <div class="w-full border-t border-solid border-gray-300 my-2"></div>
+      <div class="flex justify-between font-bold text-sm text-muted">
+        <span>SALDO RESTANTE EN ESE MOMENTO:</span>
+        <span>${currency(payment.remaining_debt || 0)}</span>
+      </div>
+     </div>
+     <div class="w-full border-t-2 border-dashed border-gray-400 mt-4 mb-2"></div>
+     <div class="text-center text-xs mt-4 font-bold">Copia de comprobante de abono histórico.</div>
+    `;
+
+    document.getElementById('printable-ticket').innerHTML = ticketHtml;
+    
+    document.getElementById('receipt-modal').classList.remove('hidden');
+    document.getElementById('receipt-modal').classList.add('flex');
+    
+    document.getElementById('receipt-close').onclick = () => {
+      document.getElementById('receipt-modal').classList.remove('flex');
+      document.getElementById('receipt-modal').classList.add('hidden');
+    };
+  };
+
+  window.deleteAbono = (paymentId) => {
+    const payment = records('payment').find(p => p.id === paymentId);
+    if (!payment) return;
+    
+    showConfirm(`¿Eliminar este abono de ${currency(payment.amount)}? La deuda de ${payment.client_name} volverá a subir.`, async () => {
+      const client = records('client').find(c => c.id === payment.client_id);
+      if (client) {
+        const newDebt = (client.debt || 0) + payment.amount;
+        await dbSdk.update({ ...client, debt: newDebt });
+      }
+      
+      const associatedSale = records('sale').find(s => s.ticket_num === payment.ticket_num && s.status === 'abono');
+      if (associatedSale) await dbSdk.delete(associatedSale);
+
+      await dbSdk.delete(payment);
+      
+      showToast('Abono cancelado. Deuda restaurada.', 'success');
+      window.closeAbonoHistory(); 
+      renderClientsAdmin(container); 
+    });
+  };
+
+  let editingPaymentId = null;
+  
+  window.editAbono = (paymentId) => {
+    const payment = records('payment').find(p => p.id === paymentId);
+    if(!payment) return;
+    
+    editingPaymentId = paymentId;
+    document.getElementById('edit-abono-amount').value = payment.amount;
+    document.getElementById('edit-abono-modal').classList.remove('hidden');
+    document.getElementById('edit-abono-modal').classList.add('flex');
+  };
+
+  document.getElementById('btn-save-edit-abono').onclick = async () => {
+    const newAmount = parseFloat(document.getElementById('edit-abono-amount').value);
+    if(!newAmount || newAmount <= 0) return showToast('Monto inválido', 'warn');
+
+    const payment = records('payment').find(p => p.id === editingPaymentId);
+    if(!payment) return;
+
+    const btn = document.getElementById('btn-save-edit-abono');
+    btn.disabled = true; btn.textContent = 'Guardando...';
+
+    const client = records('client').find(c => c.id === payment.client_id);
+    if(client) {
+      const newDebt = (client.debt || 0) + payment.amount - newAmount;
+      await dbSdk.update({ ...client, debt: Math.max(0, newDebt) }); 
+    }
+
+    const associatedSale = records('sale').find(s => s.ticket_num === payment.ticket_num && s.status === 'abono');
+    if (associatedSale) {
+      await dbSdk.update({ ...associatedSale, total: newAmount, amount: newAmount });
+    }
+
+    await dbSdk.update({ ...payment, amount: newAmount });
+
+    document.getElementById('edit-abono-modal').classList.replace('flex','hidden');
+    showToast('Abono corregido correctamente', 'success');
+    
+    btn.disabled = false; btn.textContent = 'Guardar Ajuste';
+    window.closeAbonoHistory();
+    renderClientsAdmin(container);
   };
 
   lucide.createIcons();
@@ -2685,7 +3520,8 @@ function renderCashierPOS() {
 
   // ========== ESCUCHA MULTICAJA EN TIEMPO REAL (MODULAR) ==========
   // IMPORTANTE: Aquí añadimos 'archivos_sistema' a la lista
-  const colecciones = ['productos', 'ventas', 'egresos', 'usuarios', 'movimientos', 'cortes_caja', 'categorias', 'configuracion', 'archivos_sistema']; 
+  // IMPORTANTE: Aquí añadimos clientes, creditos y abonos a la lista
+  const colecciones = ['productos', 'ventas', 'egresos', 'usuarios', 'movimientos', 'cortes_caja', 'categorias', 'configuracion', 'archivos_sistema', 'clientes', 'creditos', 'abonos'];
   
   colecciones.forEach(colName => {
     onSnapshot(collection(db, colName), (snapshot) => {

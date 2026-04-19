@@ -883,7 +883,7 @@ function renderDashboard(container) {
   lucide.createIcons();
 }
 
-// ========== INVENTORY (OPTIMIZADO PARA MÓVILES + BOTONES EDITAR CORREGIDOS) ==========
+// ========== INVENTORY (REDISEÑO RESPONSIVO + BOTONES DE LÁPIZ CORREGIDOS) ==========
 function renderInventory(container) {
   const products = records('product');
   const categories = records('category'); 
@@ -893,36 +893,62 @@ function renderInventory(container) {
   let editingCategoryId = null;
   let editingCategoryOldName = '';
 
+  // Función para dibujar la lista (Tabla en PC / Tarjetas en Móvil)
   function renderList() {
     const filtered = products.filter(p => !searchTerm || p.name.toLowerCase().includes(searchTerm.toLowerCase()) || (p.code||'').toLowerCase().includes(searchTerm.toLowerCase()));
     const list = document.getElementById('inv-list');
     if (!list) return;
     
     list.innerHTML = filtered.length ? filtered.map(p => `
-      <tr class="border-b border-card/50 hover:bg-card/30 transition">
-        <td class="p-3"><span class="text-xs text-muted bg-card px-2 py-1 rounded whitespace-nowrap">${p.code||'-'}</span></td>
-        <td class="p-3 font-medium min-w-[150px]">${p.name}</td>
-        <td class="p-3"><span class="text-xs bg-accent2/20 text-accent2 px-2 py-1 rounded-full whitespace-nowrap">${p.category||'Sin categoría'}</span></td>
-        <td class="p-3">${currency(p.buy_price)}</td>
-        <td class="p-3 font-semibold">${currency(p.sell_price)}</td>
-        <td class="p-3">
-          <div class="flex items-center gap-2">
-            <span class="${p.stock<=(p.min_stock||5)?'text-warn font-bold':''} w-8 text-center">${p.stock}</span>
-            <button type="button" onclick="window.openStockModal('${p.id}', 'in')" class="w-8 h-8 bg-success/20 text-success rounded flex items-center justify-center hover:bg-success/40 transition shrink-0" title="Entrada"><i data-lucide="plus" class="w-4 h-4 pointer-events-none"></i></button>
-            <button type="button" onclick="window.openStockModal('${p.id}', 'out')" class="w-8 h-8 bg-danger/20 text-danger rounded flex items-center justify-center hover:bg-danger/40 transition shrink-0" title="Salida"><i data-lucide="minus" class="w-4 h-4 pointer-events-none"></i></button>
+      <div class="bg-surface lg:bg-transparent border border-card lg:border-none lg:border-b lg:border-card/50 rounded-xl lg:rounded-none p-4 lg:p-3 flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4 hover:bg-card/30 transition shadow-sm lg:shadow-none relative">
+        
+        ${p.stock <= (p.min_stock || 5) ? `<div class="absolute top-0 right-0 bg-warn text-bg text-[10px] px-2 py-0.5 font-bold rounded-bl-lg rounded-tr-xl lg:hidden">Bajo Stock</div>` : ''}
+
+        <div class="flex justify-between items-center lg:w-28 shrink-0">
+          <span class="text-xs font-mono font-bold text-muted bg-bg lg:bg-card px-2 py-1 rounded border border-card lg:border-none">${p.code||'S/N'}</span>
+          <span class="lg:hidden text-[10px] bg-accent2/10 text-accent2 px-2 py-1 rounded-full font-bold uppercase tracking-wider truncate max-w-[120px]">${p.category||'General'}</span>
+        </div>
+
+        <div class="flex-1 min-w-0">
+          <div class="font-bold text-base lg:text-sm text-txt leading-tight mb-1">${p.name}</div>
+          <span class="hidden lg:inline-block text-[10px] bg-accent2/10 text-accent2 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider mb-1">${p.category||'General'}</span>
+          <div class="lg:hidden text-xs text-muted flex justify-between border-t border-card/50 pt-2 mt-2">
+            <span>Costo de Compra:</span>
+            <span class="font-medium">${currency(p.buy_price)}</span>
           </div>
-        </td>
-        <td class="p-3 print:hidden">
-          <div class="flex gap-2 items-center">
-            <button type="button" onclick="window.editProduct('${p.id}')" class="flex items-center gap-1.5 bg-accent/10 border border-accent/20 text-accent px-3 py-1.5 rounded-lg hover:bg-accent hover:text-bg transition font-semibold text-xs whitespace-nowrap" title="Editar Producto">
-              <i data-lucide="edit-2" class="w-3.5 h-3.5 pointer-events-none"></i> Editar
-            </button>
-            <button type="button" onclick="window.deleteProduct('${p.id}')" class="flex items-center justify-center bg-danger/10 border border-danger/20 text-danger px-2.5 py-1.5 rounded-lg hover:bg-danger hover:text-white transition shrink-0" title="Eliminar Producto">
-              <i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i>
-            </button>
+        </div>
+
+        <div class="hidden lg:block w-24 shrink-0 text-sm font-medium text-muted">
+          ${currency(p.buy_price)}
+        </div>
+
+        <div class="flex justify-between items-center lg:items-start lg:justify-start lg:w-28 shrink-0 lg:flex-col bg-card/40 lg:bg-transparent p-2 lg:p-0 rounded-lg">
+          <span class="text-xs text-muted lg:hidden font-semibold uppercase">Precio Venta:</span>
+          <span class="font-extrabold text-success text-xl lg:text-base">${currency(p.sell_price)}</span>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center justify-between bg-bg lg:bg-transparent p-2 lg:p-0 rounded-lg border border-card lg:border-none lg:w-36 shrink-0 lg:justify-center mt-1 lg:mt-0 gap-2 sm:gap-0">
+          <span class="text-xs text-muted lg:hidden font-semibold uppercase w-full sm:w-auto text-left">Inv. Actual:</span>
+          <div class="flex items-center gap-3 lg:gap-2 w-full sm:w-auto justify-between sm:justify-center">
+            <span class="${p.stock<=(p.min_stock||5)?'text-warn font-bold bg-warn/10 px-2 py-0.5 rounded-lg':'font-bold'} w-12 text-center text-xl lg:text-sm">${p.stock}</span>
+            <div class="flex gap-1.5">
+              <button type="button" onclick="window.openStockModal('${p.id}', 'in')" class="w-10 h-10 lg:w-8 lg:h-8 bg-success/20 text-success rounded-lg flex items-center justify-center hover:bg-success/40 transition shrink-0" title="Entrada de Stock"><i data-lucide="plus" class="w-5 h-5 lg:w-4 lg:h-4 pointer-events-none"></i></button>
+              <button type="button" onclick="window.openStockModal('${p.id}', 'out')" class="w-10 h-10 lg:w-8 lg:h-8 bg-danger/20 text-danger rounded-lg flex items-center justify-center hover:bg-danger/40 transition shrink-0" title="Salida / Merma"><i data-lucide="minus" class="w-5 h-5 lg:w-4 lg:h-4 pointer-events-none"></i></button>
+            </div>
           </div>
-        </td>
-      </tr>`).join('') : '<tr><td colspan="7" class="py-8 text-center text-muted">No hay productos.</td></tr>';
+        </div>
+
+        <div class="flex gap-2 w-full lg:w-24 shrink-0 mt-3 lg:mt-0 border-t border-card lg:border-none pt-4 lg:pt-0 lg:justify-center">
+          <button type="button" onclick="window.editProduct('${p.id}')" class="flex-1 lg:flex-none flex items-center justify-center gap-1.5 bg-accent/10 border border-accent/20 text-accent py-2.5 lg:w-8 lg:h-8 lg:p-0 rounded-lg hover:bg-accent hover:text-bg transition font-bold text-sm lg:text-xs" title="Editar Producto">
+            <i data-lucide="pencil" class="w-4 h-4 pointer-events-none"></i> <span class="lg:hidden">Editar</span>
+          </button>
+          <button type="button" onclick="window.deleteProduct('${p.id}')" class="flex items-center justify-center bg-danger/10 border border-danger/20 text-danger px-4 lg:w-8 lg:h-8 lg:p-0 rounded-lg hover:bg-danger hover:text-white transition shrink-0" title="Eliminar Producto">
+            <i data-lucide="trash-2" class="w-5 h-5 lg:w-4 lg:h-4 pointer-events-none"></i> <span class="lg:hidden">Borrar</span>
+          </button>
+        </div>
+
+      </div>`).join('') : '<div class="py-12 text-center text-muted text-sm font-medium">No se encontraron productos.</div>';
+    
     lucide.createIcons();
   }
 
@@ -972,17 +998,23 @@ function renderInventory(container) {
           </div>
 
           <div class="flex flex-col gap-1 w-full">
+            <label class="text-xs text-muted">P. Compra (Costo)</label>
+            <input id="prod-buy" type="number" step="0.01" class="w-full bg-card border border-card rounded-lg px-3 py-2.5 text-sm focus:border-accent focus:outline-none" placeholder="0.00">
+          </div>
+          
+          <div class="flex flex-col gap-1 w-full">
             <label class="text-xs text-muted">P. Venta *</label>
             <input id="prod-sell" type="number" step="0.01" class="w-full bg-card border border-card rounded-lg px-3 py-2.5 text-sm focus:border-accent focus:outline-none" placeholder="0.00" required>
           </div>
-          <div class="flex flex-col gap-1 w-full">
+
+          <div class="flex flex-col gap-1 w-full sm:col-span-2 lg:col-span-1">
             <label class="text-xs text-muted">Stock Inicial</label>
             <input id="prod-stock" type="number" class="w-full bg-card border border-card rounded-lg px-3 py-2.5 text-sm focus:border-accent focus:outline-none" value="0">
           </div>
           
-          <div class="flex flex-col sm:flex-row gap-3 sm:col-span-2 lg:col-span-3 mt-2">
+          <div class="flex flex-col sm:flex-row gap-3 sm:col-span-2 lg:col-span-2 mt-2 lg:mt-6">
             <button id="prod-submit" type="submit" class="w-full sm:flex-1 bg-accent text-bg font-bold px-6 py-3 rounded-lg hover:opacity-90 transition text-sm">Guardar Producto</button>
-            <button id="prod-cancel" type="button" class="w-full sm:w-auto bg-card text-muted px-6 py-3 rounded-lg hover:bg-bg transition text-sm font-semibold hidden text-center">Cancelar Edición</button>
+            <button id="prod-cancel" type="button" class="w-full sm:w-auto bg-card text-muted px-6 py-3 rounded-lg hover:bg-bg transition text-sm font-semibold hidden text-center">Cancelar</button>
           </div>
         </form>
       </div>
@@ -1000,12 +1032,10 @@ function renderInventory(container) {
           ${categories.map(c => `
             <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-card/40 p-3 rounded-lg border border-card gap-2">
               <span class="text-sm font-medium truncate pr-2">${c.name}</span>
-              
               <div class="flex items-center gap-1.5 shrink-0">
                 <button type="button" onclick="window.editCategory('${c.id}')" class="flex items-center gap-1 bg-accent/10 border border-accent/20 text-accent px-2.5 py-1.5 rounded-lg hover:bg-accent hover:text-bg transition font-semibold text-xs whitespace-nowrap" title="Editar">
-                  <i data-lucide="edit-2" class="w-3.5 h-3.5 pointer-events-none"></i> Editar
+                  <i data-lucide="pencil" class="w-3.5 h-3.5 pointer-events-none"></i> Editar
                 </button>
-                
                 <button type="button" onclick="window.deleteCategory('${c.id}', '${c.name}')" class="flex items-center justify-center bg-danger/10 border border-danger/20 text-danger px-2.5 py-1.5 rounded-lg hover:bg-danger hover:text-white transition" title="Eliminar">
                   <i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i>
                 </button>
@@ -1016,24 +1046,20 @@ function renderInventory(container) {
       </div>
     </div>
 
-    <div class="bg-surface rounded-xl border border-card overflow-hidden shadow-sm mt-4 w-full">
-      <div class="bg-surface rounded-xl border border-card overflow-hidden shadow-sm mt-4 w-full">
-      <table class="w-full text-xs sm:text-sm text-left">
-        <thead class="bg-surface/50">
-          <tr class="text-muted border-b border-card">
-            <th class="hidden sm:table-cell p-3">Código</th>
-            <th class="p-2 sm:p-3">Nombre</th>
-            <th class="hidden md:table-cell p-3">Categoría</th>
-            <th class="hidden lg:table-cell p-3">P.Compra</th>
-            <th class="p-2 sm:p-3">P.Venta</th>
-            <th class="p-2 sm:p-3 text-center">Stock</th>
-            <th class="p-2 sm:p-3 text-center print:hidden">Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="inv-list"></tbody>
-      </table>
+    <div class="mt-4 w-full">
+      <div class="hidden lg:flex items-center gap-4 p-3 text-muted text-xs uppercase tracking-wider font-bold border-b border-card bg-surface/50 rounded-t-xl shadow-sm">
+        <div class="w-28 pl-2">Código</div>
+        <div class="flex-1">Nombre / Categoría</div>
+        <div class="w-24">Costo</div>
+        <div class="w-28">P.Venta</div>
+        <div class="w-36 text-center">Stock</div>
+        <div class="w-24 text-center">Acciones</div>
+      </div>
+      
+      <div id="inv-list" class="flex flex-col gap-4 lg:gap-0 lg:bg-surface lg:rounded-b-xl lg:border lg:border-t-0 lg:border-card lg:shadow-sm">
+        </div>
     </div>
-    </div>
+    
   </div>`;
 
   renderList();
@@ -1094,7 +1120,7 @@ function renderInventory(container) {
       btn.classList.replace('bg-accent2', 'bg-success');
       
       document.getElementById('cancel-cat-btn').classList.remove('hidden');
-      document.getElementById('cat-form-title').innerHTML = '<i data-lucide="edit-3" class="w-5 h-5 text-warn"></i> Editar Categoría';
+      document.getElementById('cat-form-title').innerHTML = '<i data-lucide="pencil" class="w-5 h-5 text-warn"></i> Editar Categoría';
       lucide.createIcons();
     }
   };
@@ -1119,12 +1145,13 @@ function renderInventory(container) {
       document.getElementById('prod-name').value = editingProduct.name;
       document.getElementById('prod-code').value = editingProduct.code || '';
       document.getElementById('prod-cat').value = editingProduct.category || '';
+      document.getElementById('prod-buy').value = editingProduct.buy_price || 0; // Costo agregado al formulario
       document.getElementById('prod-sell').value = editingProduct.sell_price;
       document.getElementById('prod-stock').value = editingProduct.stock;
       
       document.getElementById('prod-submit').textContent = 'Actualizar Producto';
       document.getElementById('prod-cancel').classList.remove('hidden');
-      document.getElementById('prod-form-title').innerHTML = '<i data-lucide="edit" class="w-5 h-5 text-warn"></i> Editar Producto';
+      document.getElementById('prod-form-title').innerHTML = '<i data-lucide="pencil" class="w-5 h-5 text-warn"></i> Editar Producto';
       
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -1156,7 +1183,7 @@ function renderInventory(container) {
       name: newName,
       code: document.getElementById('prod-code').value.trim() || genId().slice(0,8).toUpperCase(),
       category: document.getElementById('prod-cat').value,
-      buy_price: editingProduct ? editingProduct.buy_price : 0,
+      buy_price: parseFloat(document.getElementById('prod-buy').value) || 0, // Guarda el costo
       sell_price: parseFloat(document.getElementById('prod-sell').value),
       stock: parseFloat(document.getElementById('prod-stock').value) || 0,
       min_stock: 5,
@@ -1194,7 +1221,7 @@ function renderInventory(container) {
     if(!products.length) return showToast('No hay datos', 'warn');
     const data = products.map(p => ({
       'Código': p.code || 'N/A', 'Producto': p.name, 'Categoría': p.category || 'General',
-      'P. Venta': p.sell_price, 'Stock': p.stock
+      'P. Compra': p.buy_price, 'P. Venta': p.sell_price, 'Stock': p.stock
     }));
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();

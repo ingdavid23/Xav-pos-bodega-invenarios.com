@@ -883,7 +883,7 @@ function renderDashboard(container) {
   lucide.createIcons();
 }
 
-// ========== INVENTORY (REDISEÑO RESPONSIVO + BOTONES DE LÁPIZ CORREGIDOS) ==========
+// ========== INVENTORY (REDISEÑO RESPONSIVO CON TARJETAS MÓVILES) ==========
 function renderInventory(container) {
   const products = records('product');
   const categories = records('category'); 
@@ -893,7 +893,7 @@ function renderInventory(container) {
   let editingCategoryId = null;
   let editingCategoryOldName = '';
 
-  // Función para dibujar la lista (Tabla en PC / Tarjetas en Móvil)
+  // 1. DIBUJO DE LA LISTA DE PRODUCTOS (Tarjetas en móvil, Filas en PC)
   function renderList() {
     const filtered = products.filter(p => !searchTerm || p.name.toLowerCase().includes(searchTerm.toLowerCase()) || (p.code||'').toLowerCase().includes(searchTerm.toLowerCase()));
     const list = document.getElementById('inv-list');
@@ -904,7 +904,7 @@ function renderInventory(container) {
         
         ${p.stock <= (p.min_stock || 5) ? `<div class="absolute top-0 right-0 bg-warn text-bg text-[10px] px-2 py-0.5 font-bold rounded-bl-lg rounded-tr-xl lg:hidden">Bajo Stock</div>` : ''}
 
-        <div class="flex justify-between items-center lg:w-28 shrink-0">
+        <div class="flex justify-between items-center lg:w-20 shrink-0">
           <span class="text-xs font-mono font-bold text-muted bg-bg lg:bg-card px-2 py-1 rounded border border-card lg:border-none">${p.code||'S/N'}</span>
           <span class="lg:hidden text-[10px] bg-accent2/10 text-accent2 px-2 py-1 rounded-full font-bold uppercase tracking-wider truncate max-w-[120px]">${p.category||'General'}</span>
         </div>
@@ -927,7 +927,7 @@ function renderInventory(container) {
           <span class="font-extrabold text-success text-xl lg:text-base">${currency(p.sell_price)}</span>
         </div>
 
-        <div class="flex flex-col sm:flex-row items-center justify-between bg-bg lg:bg-transparent p-2 lg:p-0 rounded-lg border border-card lg:border-none lg:w-36 shrink-0 lg:justify-center mt-1 lg:mt-0 gap-2 sm:gap-0">
+        <div class="flex flex-col sm:flex-row items-center justify-between bg-bg lg:bg-transparent p-2 lg:p-0 rounded-lg border border-card lg:border-none lg:w-32 shrink-0 lg:justify-center mt-1 lg:mt-0 gap-2 sm:gap-0">
           <span class="text-xs text-muted lg:hidden font-semibold uppercase w-full sm:w-auto text-left">Inv. Actual:</span>
           <div class="flex items-center gap-3 lg:gap-2 w-full sm:w-auto justify-between sm:justify-center">
             <span class="${p.stock<=(p.min_stock||5)?'text-warn font-bold bg-warn/10 px-2 py-0.5 rounded-lg':'font-bold'} w-12 text-center text-xl lg:text-sm">${p.stock}</span>
@@ -939,11 +939,11 @@ function renderInventory(container) {
         </div>
 
         <div class="flex gap-2 w-full lg:w-24 shrink-0 mt-3 lg:mt-0 border-t border-card lg:border-none pt-4 lg:pt-0 lg:justify-center">
-          <button type="button" onclick="window.editProduct('${p.id}')" class="flex-1 lg:flex-none flex items-center justify-center gap-1.5 bg-accent/10 border border-accent/20 text-accent py-2.5 lg:w-8 lg:h-8 lg:p-0 rounded-lg hover:bg-accent hover:text-bg transition font-bold text-sm lg:text-xs" title="Editar Producto">
-            <i data-lucide="pencil" class="w-4 h-4 pointer-events-none"></i> <span class="lg:hidden">Editar</span>
+          <button type="button" onclick="window.editProduct('${p.id}')" class="flex-1 lg:flex-none flex items-center justify-center gap-1.5 bg-accent/10 border border-accent/20 text-accent py-2.5 lg:w-8 lg:h-8 lg:p-0 rounded-lg hover:bg-accent hover:text-bg transition font-bold text-sm lg:text-xs">
+            <i data-lucide="pencil" class="w-4 h-4 pointer-events-none"></i> <span class="lg:hidden">Editar Producto</span>
           </button>
-          <button type="button" onclick="window.deleteProduct('${p.id}')" class="flex items-center justify-center bg-danger/10 border border-danger/20 text-danger px-4 lg:w-8 lg:h-8 lg:p-0 rounded-lg hover:bg-danger hover:text-white transition shrink-0" title="Eliminar Producto">
-            <i data-lucide="trash-2" class="w-5 h-5 lg:w-4 lg:h-4 pointer-events-none"></i> <span class="lg:hidden">Borrar</span>
+          <button type="button" onclick="window.deleteProduct('${p.id}')" class="flex items-center justify-center bg-danger/10 border border-danger/20 text-danger px-4 lg:w-8 lg:h-8 lg:p-0 rounded-lg hover:bg-danger hover:text-white transition shrink-0">
+            <i data-lucide="trash-2" class="w-5 h-5 lg:w-4 lg:h-4 pointer-events-none"></i>
           </button>
         </div>
 
@@ -952,6 +952,7 @@ function renderInventory(container) {
     lucide.createIcons();
   }
 
+  // 2. ESTRUCTURA PRINCIPAL DEL INVENTARIO
   container.innerHTML = `
   <div class="fade-in space-y-6 pb-10">
     
@@ -1030,13 +1031,13 @@ function renderInventory(container) {
         </div>
         <div class="space-y-2 overflow-y-auto pr-1 flex-1">
           ${categories.map(c => `
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-card/40 p-3 rounded-lg border border-card gap-2">
+            <div class="flex items-center justify-between bg-card/40 p-3 rounded-lg border border-card gap-2">
               <span class="text-sm font-medium truncate pr-2">${c.name}</span>
               <div class="flex items-center gap-1.5 shrink-0">
-                <button type="button" onclick="window.editCategory('${c.id}')" class="flex items-center gap-1 bg-accent/10 border border-accent/20 text-accent px-2.5 py-1.5 rounded-lg hover:bg-accent hover:text-bg transition font-semibold text-xs whitespace-nowrap" title="Editar">
-                  <i data-lucide="pencil" class="w-3.5 h-3.5 pointer-events-none"></i> Editar
+                <button type="button" onclick="window.editCategory('${c.id}')" class="flex items-center justify-center gap-1.5 bg-accent/10 border border-accent/20 text-accent px-3 py-1.5 lg:w-8 lg:h-8 lg:p-0 rounded-lg hover:bg-accent hover:text-bg transition font-semibold text-xs whitespace-nowrap" title="Editar">
+                  <i data-lucide="pencil" class="w-3.5 h-3.5 pointer-events-none"></i> <span class="lg:hidden">Editar</span>
                 </button>
-                <button type="button" onclick="window.deleteCategory('${c.id}', '${c.name}')" class="flex items-center justify-center bg-danger/10 border border-danger/20 text-danger px-2.5 py-1.5 rounded-lg hover:bg-danger hover:text-white transition" title="Eliminar">
+                <button type="button" onclick="window.deleteCategory('${c.id}', '${c.name}')" class="flex items-center justify-center bg-danger/10 border border-danger/20 text-danger px-3 py-1.5 lg:w-8 lg:h-8 lg:p-0 rounded-lg hover:bg-danger hover:text-white transition" title="Eliminar">
                   <i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i>
                 </button>
               </div>
@@ -1048,11 +1049,11 @@ function renderInventory(container) {
 
     <div class="mt-4 w-full">
       <div class="hidden lg:flex items-center gap-4 p-3 text-muted text-xs uppercase tracking-wider font-bold border-b border-card bg-surface/50 rounded-t-xl shadow-sm">
-        <div class="w-28 pl-2">Código</div>
+        <div class="w-20 pl-2">Código</div>
         <div class="flex-1">Nombre / Categoría</div>
         <div class="w-24">Costo</div>
         <div class="w-28">P.Venta</div>
-        <div class="w-36 text-center">Stock</div>
+        <div class="w-32 text-center">Stock</div>
         <div class="w-24 text-center">Acciones</div>
       </div>
       
@@ -1064,6 +1065,7 @@ function renderInventory(container) {
 
   renderList();
 
+  // Lógica de botones y base de datos se mantiene exactamente igual
   document.getElementById('add-cat-btn').onclick = async () => {
     const name = document.getElementById('new-cat-name').value.trim();
     if(!name) return showToast('Escribe un nombre', 'warn');
@@ -1145,7 +1147,7 @@ function renderInventory(container) {
       document.getElementById('prod-name').value = editingProduct.name;
       document.getElementById('prod-code').value = editingProduct.code || '';
       document.getElementById('prod-cat').value = editingProduct.category || '';
-      document.getElementById('prod-buy').value = editingProduct.buy_price || 0; // Costo agregado al formulario
+      document.getElementById('prod-buy').value = editingProduct.buy_price || 0; 
       document.getElementById('prod-sell').value = editingProduct.sell_price;
       document.getElementById('prod-stock').value = editingProduct.stock;
       
@@ -1183,7 +1185,7 @@ function renderInventory(container) {
       name: newName,
       code: document.getElementById('prod-code').value.trim() || genId().slice(0,8).toUpperCase(),
       category: document.getElementById('prod-cat').value,
-      buy_price: parseFloat(document.getElementById('prod-buy').value) || 0, // Guarda el costo
+      buy_price: parseFloat(document.getElementById('prod-buy').value) || 0,
       sell_price: parseFloat(document.getElementById('prod-sell').value),
       stock: parseFloat(document.getElementById('prod-stock').value) || 0,
       min_stock: 5,
@@ -1851,7 +1853,7 @@ function renderUsersAdmin(container) {
 }
 
 
-// ========== CARTERA DE CLIENTES Y CRÉDITOS (TABLA RESPONSIVA) ==========
+// ========== CARTERA DE CLIENTES Y CRÉDITOS (MINI POS CORREGIDO) ==========
 function renderClientsAdmin(container) {
   const clients = records('client');
   const products = records('product').filter(p => p.stock > 0);
@@ -1890,8 +1892,8 @@ function renderClientsAdmin(container) {
           <tr class="text-muted border-b border-card">
             <th class="p-2 sm:p-3">Cliente</th>
             <th class="hidden sm:table-cell p-3">Teléfono</th>
-            <th class="p-2 sm:p-3">Deuda</th>
-            <th class="p-2 sm:p-3 text-center">Acciones</th>
+            <th class="p-2 sm:p-3">Deuda Actual</th>
+            <th class="p-2 sm:p-3 text-center">Acciones Operativas</th>
           </tr>
         </thead>
         <tbody>
@@ -1920,45 +1922,50 @@ function renderClientsAdmin(container) {
     </div>
 
     <div id="minipos-modal" class="fixed inset-0 z-[9990] hidden items-center justify-center p-4" style="background:rgba(0,0,0,.7)">
-      <div class="bg-surface rounded-2xl w-full max-w-7xl h-[90vh] flex flex-col shadow-2xl border border-card slide-up overflow-hidden">
+      <div class="bg-bg rounded-2xl w-full max-w-7xl h-[90vh] flex flex-col shadow-2xl border border-card slide-up overflow-hidden">
         
-        <div class="p-4 border-b border-card flex justify-between items-center bg-card rounded-t-2xl">
+        <div class="p-4 border-b border-card flex justify-between items-center bg-surface rounded-t-2xl shrink-0">
           <div>
             <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="store" class="text-accent w-5 h-5"></i> Distribución / Venta</h2>
             <p class="text-sm text-muted mt-1">Cliente: <span id="minipos-client-name" class="font-bold text-txt"></span></p>
           </div>
-          <button type="button" onclick="window.closeMiniPos()" class="p-2 bg-surface rounded-lg text-muted hover:text-danger transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+          <button type="button" onclick="window.closeMiniPos()" class="p-2 bg-card rounded-lg text-muted hover:text-danger transition"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
         
-        <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
-          <div class="flex-1 p-4 border-b lg:border-b-0 lg:border-r border-card flex flex-col overflow-hidden">
-            <div class="flex-none mb-3">
-              <label class="block text-xs text-muted mb-1">Buscar o Escanear Producto</label>
-              <div class="relative">
-                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted"></i>
-                <input id="minipos-search" class="w-full bg-card border border-card rounded-lg pl-9 pr-3 py-3 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50" placeholder="Escanear código o nombre del producto..." autocomplete="off">
+        <div class="flex-1 flex flex-col lg:flex-row overflow-hidden bg-bg">
+          
+          <div class="flex-1 p-3 sm:p-4 border-b lg:border-b-0 lg:border-r border-card flex flex-col gap-3 h-[60%] lg:h-full overflow-hidden">
+            
+            <div class="relative shrink-0">
+              <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted"></i>
+              <input id="minipos-search" class="w-full bg-surface border border-card rounded-lg pl-9 pr-3 py-3 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50 shadow-sm" placeholder="Escanear código o nombre del producto..." autocomplete="off">
+            </div>
+
+            <div id="minipos-categories" class="flex gap-2 overflow-x-auto pb-1 shrink-0" style="scrollbar-width: none;"></div>
+            
+            <div id="minipos-products-grid" class="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 content-start pr-1 pb-4">
               </div>
-            </div>
-            <div id="minipos-categories" class="flex gap-2 overflow-x-auto pb-2 shrink-0 mb-2" style="scrollbar-width: none;"></div>
-            <div id="minipos-products-grid" class="flex-1 overflow-y-auto grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 content-start pr-1 pb-4">
-            </div>
+            
           </div>
           
-          <div class="w-full lg:w-[400px] p-4 bg-surface/50 flex flex-col justify-between overflow-hidden">
-            <div class="flex-1 flex flex-col gap-2 overflow-hidden mb-6">
-              <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="shopping-cart" class="w-5 h-5 text-accent"></i> Carrito de Venta</h3>
-              <div class="flex-1 overflow-y-auto pr-1 space-y-2" id="minipos-cart-list"></div>
+          <div class="w-full lg:w-[380px] xl:w-[420px] bg-surface flex flex-col h-[40%] lg:h-full shrink-0 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] lg:shadow-none z-10">
+            
+            <div class="p-3 sm:p-4 border-b border-card flex justify-between items-center shrink-0 bg-surface">
+              <h3 class="font-bold flex items-center gap-2"><i data-lucide="shopping-cart" class="w-5 h-5 text-accent"></i> Carrito</h3>
+              <span class="text-sm text-muted font-normal" id="minipos-cart-count">(0)</span>
             </div>
             
-            <div class="flex-none border-t border-card/50 pt-4">
-              <div class="text-sm text-muted mb-1">Total a cobrar</div>
-              <div id="minipos-total" class="text-5xl font-extrabold text-success mb-6">$0.00</div>
-              <label class="block text-sm font-semibold mb-2">Tipo de Pago:</label>
-              <div class="flex gap-2 mb-6">
-                <button type="button" id="btn-pay-contado" onclick="window.setMiniPosPayType('contado')" class="flex-1 py-3 rounded-xl border-2 border-success bg-success/10 text-success font-bold transition">Contado</button>
-                <button type="button" id="btn-pay-credito" onclick="window.setMiniPosPayType('credito')" class="flex-1 py-3 rounded-xl border-2 border-transparent bg-card text-muted hover:bg-surface font-bold transition">Crédito</button>
+            <div class="flex-1 overflow-y-auto p-2 sm:p-3 space-y-2" id="minipos-cart-list"></div>
+            
+            <div class="p-3 sm:p-4 border-t border-card space-y-3 sm:space-y-4 shrink-0 bg-surface">
+              <div class="flex justify-between text-lg sm:text-xl font-extrabold"><span>Total</span><span class="text-success" id="minipos-total">$0.00</span></div>
+              
+              <div class="flex gap-2">
+                <button type="button" id="btn-pay-contado" onclick="window.setMiniPosPayType('contado')" class="flex-1 py-3 sm:py-2.5 rounded-xl sm:rounded-lg text-sm font-bold transition border-success bg-success text-bg shadow-md">Contado</button>
+                <button type="button" id="btn-pay-credito" onclick="window.setMiniPosPayType('credito')" class="flex-1 py-3 sm:py-2.5 rounded-xl sm:rounded-lg text-sm font-bold transition bg-card text-muted hover:bg-surface border border-card">Crédito</button>
               </div>
-              <button type="button" id="minipos-process-btn" onclick="window.processMiniPos()" class="w-full bg-warn text-bg font-bold py-4 rounded-xl hover:opacity-90 transition disabled:opacity-50 text-lg shadow-lg">
+              
+              <button type="button" id="minipos-process-btn" onclick="window.processMiniPos()" class="w-full bg-warn text-bg font-extrabold py-3.5 sm:py-4 rounded-xl hover:opacity-90 transition shadow-lg text-lg disabled:opacity-50" disabled>
                 Procesar Operación
               </button>
             </div>
@@ -1989,13 +1996,20 @@ function renderClientsAdmin(container) {
 
     <div id="abono-history-modal" class="fixed inset-0 z-[9991] hidden items-center justify-center p-4" style="background:rgba(0,0,0,.7)">
       <div class="bg-surface rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl border border-card slide-up">
-        <div class="p-4 border-b border-card flex justify-between items-center bg-card rounded-t-2xl">
+        <div class="p-4 border-b border-card flex justify-between items-center bg-surface rounded-t-2xl shrink-0">
           <h2 class="text-lg font-bold flex items-center gap-2"><i data-lucide="history" class="text-accent w-5 h-5"></i> Historial de Abonos: <span id="history-client-name" class="text-txt"></span></h2>
-          <button type="button" onclick="window.closeAbonoHistory()" class="p-2 bg-surface rounded-lg text-muted hover:text-danger transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+          <button type="button" onclick="window.closeAbonoHistory()" class="p-2 bg-card rounded-lg text-muted hover:text-danger transition"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
-        <div class="p-4 flex-1 overflow-y-auto">
-          <table class="w-full text-sm">
-            <thead><tr class="text-muted text-left border-b border-card"><th class="pb-2">Fecha</th><th class="pb-2">Folio de Ticket</th><th class="pb-2">Monto del Abono</th><th class="pb-2 text-center">Acciones</th></tr></thead>
+        <div class="p-0 sm:p-4 flex-1 overflow-y-auto">
+          <table class="w-full text-xs sm:text-sm text-left">
+            <thead class="bg-surface/50 sm:bg-transparent">
+              <tr class="text-muted border-b border-card">
+                <th class="p-2 sm:pb-2">Fecha</th>
+                <th class="p-2 sm:pb-2 hidden sm:table-cell">Ticket</th>
+                <th class="p-2 sm:pb-2">Abono</th>
+                <th class="p-2 sm:pb-2 text-center">Acciones</th>
+              </tr>
+            </thead>
             <tbody id="abono-history-list"></tbody>
           </table>
         </div>
@@ -2020,105 +2034,75 @@ function renderClientsAdmin(container) {
   let activeClient = null;
   let payType = 'contado';
 
-  // Lógica Agregar Cliente
   document.getElementById('client-form').onsubmit = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('cli-btn');
     btn.disabled = true; btn.textContent = '...';
-    
     await dbSdk.create({
       type: 'client', 
       name: document.getElementById('cli-name').value.trim(), 
       phone: document.getElementById('cli-phone').value.trim(),
-      debt: 0,
-      date: now()
+      debt: 0, date: now()
     });
-    
     showToast('Cliente agregado');
     renderClientsAdmin(container);
   };
 
-  // NUEVA LÓGICA: ELIMINAR CLIENTE EN CASCADA CON RESTAURACIÓN DE STOCK
   window.deleteClient = (clientId) => {
     const client = clients.find(c => c.id === clientId);
     if (!client) return;
-
-    showConfirm(`¿Eliminar DEFINITIVAMENTE al cliente "${client.name}"? Esto borrará su historial y RESTAURARÁ el stock de sus compras al inventario.`, async () => {
+    showConfirm(`¿Eliminar DEFINITIVAMENTE al cliente "${client.name}"? Esto borrará su historial y RESTAURARÁ el stock de sus compras.`, async () => {
       showToast('Restaurando stock y eliminando...', 'info');
-
-      // Buscar ventas normales, ventas a crédito, abonos del historial, Y las "ventas fantasmas" de caja.
       const relatedSales = records('sale').filter(s => s.client_id === clientId || (s.status === 'abono' && s.name.includes(client.name)));
       const relatedCreditSales = records('credit_sale').filter(s => s.client_id === clientId);
       const relatedPayments = records('payment').filter(p => p.client_id === clientId);
 
       try {
-        // 1. Restaurar el stock de las ventas (normales y a crédito) que NO sean abonos
         const allProductSales = [...relatedSales, ...relatedCreditSales].filter(s => s.status !== 'abono');
-        
         for (const sale of allProductSales) {
           const product = allRecords.find(p => p.type === 'product' && p.name === sale.name);
           if (product) {
             const qtyToRestore = Number(sale.quantity || 1);
             const newStock = Number(product.stock) + qtyToRestore;
-            
-            // Actualizar el producto en la BD
             await dbSdk.update({ ...product, stock: newStock });
-            
-            // Registrar el movimiento de entrada en el historial de stock
             await dbSdk.create({
               type: 'movement', name: product.name, code: product.code, category: 'in',
               quantity: qtyToRestore, total: newStock, cashier: currentUser?.username || 'admin',
-              description: `Devolución por eliminación del cliente ${client.name}`, date: now(),
+              description: `Devolución por eliminación de ${client.name}`, date: now(),
               buy_price: 0, sell_price: 0, stock: 0, min_stock: 0, payment_method: '', status: 'active', initial_cash: 0, final_cash: 0, sales_total: 0, amount: 0
             });
           }
         }
-
-        // 2. Borrar todos los registros relacionados uno por uno
         const allRelated = [...relatedSales, ...relatedCreditSales, ...relatedPayments];
-        for (const record of allRelated) {
-          await dbSdk.delete(record);
-        }
-        
-        // 3. Borrar al cliente
+        for (const record of allRelated) await dbSdk.delete(record);
         await dbSdk.delete(client);
-
         showToast('Cliente eliminado y stock restaurado', 'success');
         renderClientsAdmin(container);
       } catch (e) {
         console.error("Error eliminando cliente:", e);
-        showToast('Hubo un error al eliminar. Revisa tu conexión.', 'error');
+        showToast('Error al eliminar.', 'error');
       }
     });
   };
 
-  // SCRIPT MÁGICO: BÚSQUEDA Y ESCÁNER EN TIEMPO REAL
   const miniPosSearchInput = document.getElementById('minipos-search');
 
   window.refocusMiniPosSearch = () => {
     if (document.getElementById('minipos-modal').classList.contains('flex')) {
       if (!document.getElementById('receipt-modal').classList.contains('flex')) {
-          miniPosSearchInput.focus();
+          if(window.innerWidth > 1024) miniPosSearchInput.focus();
       }
     }
   };
 
-  miniPosSearchInput.addEventListener('input', () => {
-    window.drawMiniPosProductsGrid();
-  });
+  miniPosSearchInput.addEventListener('input', () => { window.drawMiniPosProductsGrid(); });
 
   miniPosSearchInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      
       const value = miniPosSearchInput.value.trim().toLowerCase();
       if (!value) return;
-
-      const prod = products.find(p => 
-        (p.code && p.code.toLowerCase() === value) || 
-        (p.name && p.name.toLowerCase() === value)
-      );
-
+      const prod = products.find(p => (p.code && p.code.toLowerCase() === value) || (p.name && p.name.toLowerCase() === value));
       if (prod) {
         window.addDirectlyToMiniPosCart(prod.id); 
         miniPosSearchInput.value = ''; 
@@ -2132,12 +2116,9 @@ function renderClientsAdmin(container) {
 
   document.getElementById('minipos-modal').addEventListener('transitionend', window.refocusMiniPosSearch);
   document.getElementById('minipos-modal').addEventListener('click', (e) => {
-    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
-      window.refocusMiniPosSearch();
-    }
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') window.refocusMiniPosSearch();
   });
 
-  // ===== FUNCIONES MINI POS (CUADRÍCULA DIRECTA) =====
   window.openMiniPos = (clientId) => {
     activeClient = clients.find(c => c.id === clientId);
     if(!activeClient) return;
@@ -2152,8 +2133,7 @@ function renderClientsAdmin(container) {
     
     document.getElementById('minipos-modal').classList.remove('hidden');
     document.getElementById('minipos-modal').classList.add('flex');
-    
-    setTimeout(window.refocusMiniPosSearch, 200);
+    if(window.innerWidth > 1024) setTimeout(window.refocusMiniPosSearch, 200);
   };
 
   window.closeMiniPos = () => {
@@ -2171,8 +2151,8 @@ function renderClientsAdmin(container) {
     catContainer.innerHTML = allCats.map(c => {
        const val = c.id === 'all' ? '' : c.name;
        const isSelected = currentMiniPosCategory === val;
-       const bgClass = isSelected ? 'bg-accent text-bg font-bold shadow-md' : 'bg-card text-muted hover:bg-surface border border-card';
-       return `<button type="button" data-minicat="${val}" class="whitespace-nowrap px-4 py-2 rounded-xl text-sm transition ${bgClass}">${c.name}</button>`;
+       const bgClass = isSelected ? 'bg-accent text-bg font-bold shadow-md' : 'bg-surface text-muted hover:bg-card border border-card shadow-sm';
+       return `<button type="button" data-minicat="${val}" class="whitespace-nowrap px-4 py-2 sm:py-1.5 rounded-xl sm:rounded-lg text-sm transition ${bgClass}">${c.name}</button>`;
     }).join('');
 
     catContainer.querySelectorAll('[data-minicat]').forEach(btn => {
@@ -2185,55 +2165,53 @@ function renderClientsAdmin(container) {
     });
   };
 
-  window.drawMiniPosProductsGrid = () => {
+ // === DIBUJO DE TARJETAS PROTEGIDAS (MINI POS) ===
+ window.drawMiniPosProductsGrid = () => {
     const grid = document.getElementById('minipos-products-grid');
     if (!grid) return;
     
     const term = miniPosSearchInput.value.toLowerCase();
-
     const filtered = products.filter(p => {
       const matchesSearch = !term || p.name.toLowerCase().includes(term) || (p.code||'').toLowerCase().includes(term);
       const matchesCat = !currentMiniPosCategory || p.category === currentMiniPosCategory;
-      return matchesSearch && matchesCat;
+      return matchesSearch && matchesCat && p.stock > 0;
     });
 
     grid.innerHTML = filtered.map(p => `
-      <button type="button" onclick="window.addDirectlyToMiniPosCart('${p.id}')" class="bg-card hover:bg-surface border border-card rounded-xl p-2.5 text-center flex flex-col items-center gap-1.5 transition group relative overflow-hidden shadow-sm">
-        ${p.stock <= (p.min_stock || 5) ? `<div class="absolute top-0 right-0 bg-warn text-bg text-[10px] px-1.5 py-0.5 font-bold rounded-bl-lg">Bajo Stock</div>` : ''}
+      <div data-add-prod="${p.id}" role="button" tabindex="0" class="bg-surface hover:bg-card/50 border border-card rounded-xl p-3 text-left transition group flex flex-col relative overflow-hidden shadow-sm cursor-pointer h-auto min-h-[240px] w-full">
         
-        <div class="w-16 h-16 sm:w-20 sm:h-20 bg-surface rounded-lg overflow-hidden shrink-0 flex items-center justify-center p-1 border border-card">
-          ${p.image ? `<img src="${p.image}" class="w-full h-full object-contain">` : `<i data-lucide="image" class="text-muted w-6 h-6"></i>`}
+        ${p.stock <= (p.min_stock || 5) ? `<div class="absolute top-0 right-0 bg-warn text-bg text-[10px] px-2 py-0.5 font-bold rounded-bl-lg z-10">Bajo Stock</div>` : ''}
+        
+        <div class="w-full h-28 sm:h-32 bg-bg rounded-lg overflow-hidden shrink-0 flex items-center justify-center p-1 mb-2 border border-card/50">
+          ${p.image ? `<img src="${p.image}" class="w-full h-full object-contain">` : `<i data-lucide="image" class="text-muted w-8 h-8"></i>`}
         </div>
         
-        <div class="flex-1 w-full flex flex-col justify-between mt-1">
-          <div class="text-xs font-bold group-hover:text-accent transition leading-tight line-clamp-2">${p.name}</div>
-          <div class="text-sm font-extrabold text-success mt-1">${currency(p.sell_price)}</div>
+        <div class="flex flex-col flex-grow w-full justify-between">
+          <div>
+            <div class="text-xs sm:text-sm font-bold text-txt group-hover:text-accent transition leading-tight line-clamp-2">${p.name}</div>
+            <div class="text-[10px] sm:text-[11px] text-muted mt-1 font-mono">${p.code||'---'} · <span class="${p.stock <= (p.min_stock||5) ? 'text-warn font-bold' : ''}">${p.stock} uds</span></div>
+          </div>
+          <div class="text-base sm:text-lg font-extrabold text-success mt-auto pt-2 truncate w-full" title="${currency(p.sell_price)}">${currency(p.sell_price)}</div>
         </div>
-      </button>`).join('') || '<div class="col-span-full text-center text-muted py-8 text-sm">No se encontraron productos.</div>';
+      </div>`).join('') || '<div class="col-span-full text-center text-muted py-8 text-sm w-full">No se encontraron productos.</div>';
       
     lucide.createIcons();
+    grid.querySelectorAll('[data-add-prod]').forEach(btn => {
+      btn.onclick = () => { window.addDirectlyToMiniPosCart(btn.dataset.addProd); };
+    });
   };
 
   window.addDirectlyToMiniPosCart = (productId) => {
     const prod = products.find(p => p.id === productId);
     if (!prod) return;
-    
     const existing = window.miniPosCart.find(c => c.id === prod.id);
-    
     if (existing) {
-      if (existing.qty < prod.stock) {
-        existing.qty++;
-      } else {
-        return showToast(`Stock insuficiente (Max: ${prod.stock})`, 'error');
-      }
+      if (existing.qty < prod.stock) existing.qty++;
+      else return showToast(`Stock insuficiente`, 'error');
     } else {
-      if (prod.stock >= 1) {
-        window.miniPosCart.push({ ...prod, qty: 1 });
-      } else {
-        return showToast(`Producto sin stock`, 'error');
-      }
+      if (prod.stock >= 1) window.miniPosCart.push({ ...prod, qty: 1 });
+      else return showToast(`Producto sin stock`, 'error');
     }
-    
     window.renderMiniPosCart();
     window.refocusMiniPosSearch();
   };
@@ -2247,32 +2225,35 @@ function renderClientsAdmin(container) {
   window.renderMiniPosCart = () => {
     const list = document.getElementById('minipos-cart-list');
     const totalEl = document.getElementById('minipos-total');
+    const countEl = document.getElementById('minipos-cart-count');
     let total = 0;
 
     list.innerHTML = window.miniPosCart.map((item, i) => {
       total += item.sell_price * item.qty;
       return `
-      <div class="bg-card rounded-lg p-3 flex flex-col gap-2 border border-surface shadow-sm mb-2">
-        <div class="flex justify-between items-start">
-          <div class="text-sm font-medium leading-tight">${item.name}</div>
-          <button type="button" onclick="window.removeMiniPosItem(${i})" class="text-muted hover:text-danger ml-2"><i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i></button>
+      <div class="bg-surface rounded-lg p-2 sm:p-3 flex items-center justify-between gap-2 border border-card shadow-sm">
+        <div class="flex-1 min-w-0">
+          <div class="text-xs sm:text-sm font-medium truncate">${item.name}</div>
+          <div class="text-[10px] sm:text-xs text-muted">${currency(item.sell_price)} c/u</div>
         </div>
-        <div class="flex justify-between items-center mt-1">
-          <div class="flex items-center gap-1 bg-surface border border-card rounded-lg p-1">
-            <button type="button" data-minipos-minus="${i}" class="w-7 h-7 rounded flex items-center justify-center hover:bg-danger/20 transition text-sm text-muted hover:text-danger">−</button>
-            <input type="number" step="0.01" data-minipos-edit="${i}" value="${item.qty}" class="w-12 bg-transparent text-center font-bold text-sm focus:outline-none focus:text-accent" onclick="this.select()">
-            <button type="button" data-minipos-plus="${i}" class="w-7 h-7 rounded flex items-center justify-center hover:bg-success/20 transition text-sm text-muted hover:text-success">+</button>
-          </div>
-          <div class="font-bold text-success text-right text-base">${currency(item.sell_price * item.qty)}</div>
+        <div class="flex items-center gap-1 bg-bg border border-card rounded-lg p-1 shrink-0">
+          <button type="button" data-minipos-minus="${i}" class="w-6 h-6 sm:w-7 sm:h-7 rounded flex items-center justify-center hover:bg-danger/20 transition text-sm text-muted hover:text-danger">−</button>
+          <input type="number" step="0.01" data-minipos-edit="${i}" value="${item.qty}" class="w-10 sm:w-12 bg-transparent text-center font-bold text-xs sm:text-sm focus:outline-none focus:text-accent" onclick="this.select()">
+          <button type="button" data-minipos-plus="${i}" class="w-6 h-6 sm:w-7 sm:h-7 rounded flex items-center justify-center hover:bg-success/20 transition text-sm text-muted hover:text-success">+</button>
         </div>
+        <div class="font-bold text-success text-right text-sm sm:text-base w-16 sm:w-20 shrink-0">${currency(item.sell_price * item.qty)}</div>
+        <button type="button" onclick="window.removeMiniPosItem(${i})" class="text-muted hover:text-danger ml-1 p-1 shrink-0"><i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i></button>
       </div>`;
-    }).join('') || '<div class="text-center text-muted text-sm mt-10">Agrega productos para distribuir</div>';
+    }).join('') || '<div class="text-center text-muted text-xs sm:text-sm mt-10">Agrega productos para distribuir</div>';
     
     totalEl.textContent = currency(total);
+    if(countEl) countEl.textContent = `(${window.miniPosCart.length})`;
     lucide.createIcons();
     
     const btnProcess = document.getElementById('minipos-process-btn');
     btnProcess.disabled = window.miniPosCart.length === 0;
+    if(window.miniPosCart.length > 0) btnProcess.textContent = `Procesar ${currency(total)}`;
+    else btnProcess.textContent = 'Procesar Operación';
 
     list.querySelectorAll('[data-minipos-minus]').forEach(b => {
        b.onclick = () => {
@@ -2287,11 +2268,8 @@ function renderClientsAdmin(container) {
     list.querySelectorAll('[data-minipos-plus]').forEach(b => {
        b.onclick = () => {
           const idx = parseInt(b.dataset.miniposPlus);
-          if(window.miniPosCart[idx].qty < window.miniPosCart[idx].stock) {
-              window.miniPosCart[idx].qty++;
-          } else {
-              showToast('Stock máximo superado', 'warn');
-          }
+          if(window.miniPosCart[idx].qty < window.miniPosCart[idx].stock) window.miniPosCart[idx].qty++;
+          else showToast('Stock máximo superado', 'warn');
           window.renderMiniPosCart();
           window.refocusMiniPosSearch();
        };
@@ -2301,18 +2279,14 @@ function renderClientsAdmin(container) {
        input.addEventListener('change', (e) => {
           const idx = parseInt(e.target.dataset.miniposEdit);
           let val = parseFloat(e.target.value);
-          if(isNaN(val) || val <= 0) {
-             window.miniPosCart.splice(idx, 1);
-          } else if(val > window.miniPosCart[idx].stock) {
+          if(isNaN(val) || val <= 0) window.miniPosCart.splice(idx, 1);
+          else if(val > window.miniPosCart[idx].stock) {
              showToast('Stock máximo superado', 'warn');
              window.miniPosCart[idx].qty = window.miniPosCart[idx].stock;
-          } else {
-             window.miniPosCart[idx].qty = val;
-          }
+          } else window.miniPosCart[idx].qty = val;
           window.renderMiniPosCart();
           window.refocusMiniPosSearch();
        });
-       input.addEventListener('focus', () => { miniPosSearchInput.blur(); }); 
     });
   };
 
@@ -2320,13 +2294,12 @@ function renderClientsAdmin(container) {
     payType = type;
     const bCon = document.getElementById('btn-pay-contado');
     const bCre = document.getElementById('btn-pay-credito');
-    
     if(type === 'contado') {
-      bCon.className = "flex-1 py-3 rounded-xl border-2 border-success bg-success/10 text-success font-bold transition";
-      bCre.className = "flex-1 py-3 rounded-xl border-2 border-transparent bg-card text-muted hover:bg-surface font-bold transition";
+      bCon.className = "flex-1 py-3 sm:py-2.5 rounded-xl sm:rounded-lg text-sm font-bold transition border-success bg-success text-bg shadow-md";
+      bCre.className = "flex-1 py-3 sm:py-2.5 rounded-xl sm:rounded-lg text-sm font-bold transition bg-card text-muted hover:bg-surface border border-card";
     } else {
-      bCre.className = "flex-1 py-3 rounded-xl border-2 border-accent bg-accent/10 text-accent font-bold transition";
-      bCon.className = "flex-1 py-3 rounded-xl border-2 border-transparent bg-card text-muted hover:bg-surface font-bold transition";
+      bCre.className = "flex-1 py-3 sm:py-2.5 rounded-xl sm:rounded-lg text-sm font-bold transition border-accent bg-accent text-bg shadow-md";
+      bCon.className = "flex-1 py-3 sm:py-2.5 rounded-xl sm:rounded-lg text-sm font-bold transition bg-card text-muted hover:bg-surface border border-card";
     }
     window.refocusMiniPosSearch(); 
   };
@@ -2335,7 +2308,6 @@ function renderClientsAdmin(container) {
     if(!window.miniPosCart.length || !activeClient) return;
     const btn = document.getElementById('minipos-process-btn');
     btn.disabled = true; btn.textContent = 'Procesando...';
-    
     let total = window.miniPosCart.reduce((a, b) => a + (b.sell_price * b.qty), 0);
     const ticketNum = Math.floor(Math.random() * 90000) + 10000; 
 
@@ -2343,7 +2315,6 @@ function renderClientsAdmin(container) {
       for (const item of window.miniPosCart) {
         const prodRec = allRecords.find(r => r.id === item.id);
         if (prodRec) await dbSdk.update({ ...prodRec, stock: Math.max(0, prodRec.stock - item.qty) });
-        
         await dbSdk.create({
           type: payType === 'contado' ? 'sale' : 'credit_sale', 
           name: item.name, buy_price: item.buy_price||0, sell_price: item.sell_price,
@@ -2353,9 +2324,7 @@ function renderClientsAdmin(container) {
         });
       }
 
-      if (payType === 'credito') {
-        await dbSdk.update({ ...activeClient, debt: (activeClient.debt || 0) + total });
-      }
+      if (payType === 'credito') await dbSdk.update({ ...activeClient, debt: (activeClient.debt || 0) + total });
 
       const isCredit = payType === 'credito';
       const itemsHtml = window.miniPosCart.map(item => `
@@ -2381,14 +2350,10 @@ function renderClientsAdmin(container) {
         </div>
        </div>
        <div class="w-full border-t-2 border-dashed border-gray-400 mb-2"></div>
-       <div class="w-full flex justify-between font-bold text-xs mb-1">
-         <span>CANT</span><span class="flex-1 ml-2">DESCRIPCIÓN</span><span class="text-right w-16">IMPORTE</span>
-       </div>
+       <div class="w-full flex justify-between font-bold text-xs mb-1"><span>CANT</span><span class="flex-1 ml-2">DESCRIPCIÓN</span><span class="text-right w-16">IMPORTE</span></div>
        <div class="w-full text-xs space-y-1">${itemsHtml}</div>
        <div class="w-full border-t-2 border-dashed border-gray-400 mt-2 mb-2"></div>
-       <div class="w-full flex justify-between items-center text-base font-bold mb-2">
-         <span>TOTAL:</span><span class="text-lg">${currency(total)}</span>
-       </div>
+       <div class="w-full flex justify-between items-center text-base font-bold mb-2"><span>TOTAL:</span><span class="text-lg">${currency(total)}</span></div>
        <div class="w-full border-t border-solid border-gray-300 mb-2"></div>
        <div class="w-full text-xs space-y-1">
         <div class="font-bold text-center mb-1">ESTADO DE CUENTA</div>
@@ -2420,7 +2385,7 @@ function renderClientsAdmin(container) {
     }
   };
 
-  // ===== FUNCIONES ABONOS E HISTORIAL =====
+  // ===== FUNCIONES ABONOS E HISTORIAL (SIN CAMBIOS ESTRUCTURALES) =====
   window.openAbono = (clientId) => {
     activeClient = clients.find(c => c.id === clientId);
     if(!activeClient || activeClient.debt <= 0) return;
@@ -2535,23 +2500,19 @@ function renderClientsAdmin(container) {
     
     list.innerHTML = clientPayments.map(p => `
       <tr class="border-b border-card/50 hover:bg-surface transition">
-        <td class="py-3 text-muted">${p.date ? p.date.slice(0,16).replace('T', ' ') : '-'}</td>
-        <td class="py-3 text-muted">#${p.ticket_num || '-'}</td>
-        <td class="py-3 font-bold text-success">${currency(p.amount)}</td>
-        <td class="py-3 flex justify-center gap-2">
-          
-          <button type="button" onclick="window.viewAbonoTicket('${p.id}')" class="px-2.5 py-1.5 bg-surface border border-card text-txt rounded-lg hover:bg-card transition flex items-center gap-1.5 text-xs font-semibold" title="Ver Ticket Original">
-            <i data-lucide="receipt" class="w-3.5 h-3.5 pointer-events-none"></i> Ticket
+        <td class="py-2 sm:py-3 text-muted text-xs sm:text-sm">${p.date ? p.date.slice(0,16).replace('T', ' ') : '-'}</td>
+        <td class="py-2 sm:py-3 text-muted text-xs sm:text-sm hidden sm:table-cell">#${p.ticket_num || '-'}</td>
+        <td class="py-2 sm:py-3 font-bold text-success text-xs sm:text-sm">${currency(p.amount)}</td>
+        <td class="py-2 sm:py-3 flex justify-center gap-1 sm:gap-2">
+          <button type="button" onclick="window.viewAbonoTicket('${p.id}')" class="p-1.5 sm:px-2.5 sm:py-1.5 bg-surface border border-card text-txt rounded-lg hover:bg-card transition flex items-center justify-center gap-1.5 text-xs font-semibold" title="Ver Ticket">
+            <i data-lucide="receipt" class="w-3.5 h-3.5 pointer-events-none"></i> <span class="hidden sm:inline">Ticket</span>
           </button>
-          
-          <button type="button" onclick="window.editAbono('${p.id}')" class="px-2.5 py-1.5 bg-accent/10 text-accent rounded-lg hover:bg-accent hover:text-bg transition flex items-center gap-1.5 text-xs font-semibold" title="Ajustar cantidad del Abono">
-            <i data-lucide="edit" class="w-3.5 h-3.5 pointer-events-none"></i> Editar
+          <button type="button" onclick="window.editAbono('${p.id}')" class="p-1.5 sm:px-2.5 sm:py-1.5 bg-accent/10 text-accent rounded-lg hover:bg-accent hover:text-bg transition flex items-center justify-center gap-1.5 text-xs font-semibold" title="Editar">
+            <i data-lucide="pencil" class="w-3.5 h-3.5 pointer-events-none"></i> <span class="hidden sm:inline">Editar</span>
           </button>
-          
-          <button type="button" onclick="window.deleteAbono('${p.id}')" class="p-1.5 bg-danger/10 text-danger rounded-lg hover:bg-danger hover:text-bg transition flex items-center justify-center" title="Eliminar Abono por error">
-            <i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i>
+          <button type="button" onclick="window.deleteAbono('${p.id}')" class="p-1.5 bg-danger/10 text-danger rounded-lg hover:bg-danger hover:text-bg transition flex items-center justify-center" title="Eliminar">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5 pointer-events-none"></i>
           </button>
-
         </td>
       </tr>
     `).join('') || '<tr><td colspan="4" class="py-6 text-center text-muted">Aún no hay abonos registrados para este cliente.</td></tr>';
@@ -2561,10 +2522,8 @@ function renderClientsAdmin(container) {
   window.viewAbonoTicket = (paymentId) => {
     const payment = records('payment').find(p => p.id === paymentId);
     if (!payment) return;
-    
     const sysLogo = getSystemLogo();
     const logoPrintHtml = sysLogo ? `<img src="${sysLogo}" style="max-width: 140px; max-height: 80px; margin: 0 auto 10px auto; display: block; object-fit: contain;">` : '';
-    
     const ticketHtml = `
      <div class="text-center mb-3">
       ${logoPrintHtml}
@@ -2588,12 +2547,9 @@ function renderClientsAdmin(container) {
      <div class="w-full border-t-2 border-dashed border-gray-400 mt-4 mb-2"></div>
      <div class="text-center text-xs mt-4 font-bold">Copia de comprobante de abono histórico.</div>
     `;
-
     document.getElementById('printable-ticket').innerHTML = ticketHtml;
-    
     document.getElementById('receipt-modal').classList.remove('hidden');
     document.getElementById('receipt-modal').classList.add('flex');
-    
     document.getElementById('receipt-close').onclick = () => {
       document.getElementById('receipt-modal').classList.remove('flex');
       document.getElementById('receipt-modal').classList.add('hidden');
@@ -2603,19 +2559,15 @@ function renderClientsAdmin(container) {
   window.deleteAbono = (paymentId) => {
     const payment = records('payment').find(p => p.id === paymentId);
     if (!payment) return;
-    
     showConfirm(`¿Eliminar este abono de ${currency(payment.amount)}? La deuda de ${payment.client_name} volverá a subir.`, async () => {
       const client = records('client').find(c => c.id === payment.client_id);
       if (client) {
         const newDebt = (client.debt || 0) + payment.amount;
         await dbSdk.update({ ...client, debt: newDebt });
       }
-      
       const associatedSale = records('sale').find(s => s.ticket_num === payment.ticket_num && s.status === 'abono');
       if (associatedSale) await dbSdk.delete(associatedSale);
-
       await dbSdk.delete(payment);
-      
       showToast('Abono cancelado. Deuda restaurada.', 'success');
       window.closeAbonoHistory(); 
       renderClientsAdmin(container); 
@@ -2623,11 +2575,9 @@ function renderClientsAdmin(container) {
   };
 
   let editingPaymentId = null;
-  
   window.editAbono = (paymentId) => {
     const payment = records('payment').find(p => p.id === paymentId);
     if(!payment) return;
-    
     editingPaymentId = paymentId;
     document.getElementById('edit-abono-amount').value = payment.amount;
     document.getElementById('edit-abono-modal').classList.remove('hidden');
@@ -2637,29 +2587,24 @@ function renderClientsAdmin(container) {
   document.getElementById('btn-save-edit-abono').onclick = async () => {
     const newAmount = parseFloat(document.getElementById('edit-abono-amount').value);
     if(!newAmount || newAmount <= 0) return showToast('Monto inválido', 'warn');
-
     const payment = records('payment').find(p => p.id === editingPaymentId);
     if(!payment) return;
-
     const btn = document.getElementById('btn-save-edit-abono');
     btn.disabled = true; btn.textContent = 'Guardando...';
-
+    
     const client = records('client').find(c => c.id === payment.client_id);
     if(client) {
       const newDebt = (client.debt || 0) + payment.amount - newAmount;
-      await dbSdk.update({ ...client, debt: Math.max(0, newDebt) }); 
+      await dbSdk.update({ ...client, debt: Math.max(0, newDebt) });
     }
-
     const associatedSale = records('sale').find(s => s.ticket_num === payment.ticket_num && s.status === 'abono');
     if (associatedSale) {
       await dbSdk.update({ ...associatedSale, total: newAmount, amount: newAmount });
     }
-
     await dbSdk.update({ ...payment, amount: newAmount });
-
+    
     document.getElementById('edit-abono-modal').classList.replace('flex','hidden');
     showToast('Abono corregido correctamente', 'success');
-    
     btn.disabled = false; btn.textContent = 'Guardar Ajuste';
     window.closeAbonoHistory();
     renderClientsAdmin(container);

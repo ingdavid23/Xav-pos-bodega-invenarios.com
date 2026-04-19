@@ -1741,7 +1741,7 @@ function renderUsersAdmin(container) {
               <td class="p-2 sm:p-3"><span class="text-[10px] sm:text-xs px-2 py-0.5 rounded-full ${u.role==='admin'?'bg-accent/20 text-accent':'bg-accent2/20 text-accent2'}">${u.role==='admin'?'Admin':'Cajero'}</span></td>
               <td class="p-2 sm:p-3 flex justify-center gap-1 sm:gap-2">
                 <button type="button" onclick="window.editUser('${u.username}')" class="p-1.5 sm:p-2 bg-accent/10 hover:bg-accent/20 rounded-lg transition text-accent" title="Editar">
-                  <i data-lucide="edit" class="w-4 h-4 pointer-events-none"></i>
+                  <i data-lucide="pencil" class="w-4 h-4 pointer-events-none"></i>
                 </button>
                 ${u.isDefault && !u.raw ? '<span class="text-[10px] sm:text-xs text-muted font-bold p-1.5 sm:p-2">Fijo</span>' :
                 `<button type="button" onclick="window.deleteUser('${u.username}')" class="p-1.5 sm:p-2 bg-danger/10 hover:bg-danger/20 rounded-lg transition text-danger" title="Eliminar">

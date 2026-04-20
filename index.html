@@ -1407,8 +1407,9 @@ function renderSalesReport(container) {
     };
   }
 
-  // === INTERCEPTOR DE CLICS (Eliminar Venta/Abono y Revertir Stock) ===
+  // === INTERCEPTOR DE CLICS (Eliminar Venta/Abono y Revertir Movimientos) ===
   container.onclick = (e) => {
+    
     // A) Eliminar Venta o Abono
     const delSaleBtn = e.target.closest('[data-del-sale]');
     if (delSaleBtn) {
@@ -1417,7 +1418,7 @@ function renderSalesReport(container) {
         const esAbono = s.status === 'abono';
         const msg = esAbono 
           ? `¿Eliminar este ABONO de ${currency(s.total)}? La deuda del cliente aumentará de nuevo y se borrará de su historial.`
-          : `¿Eliminar la venta de ${s.name} y restaurar el stock?`;
+          : `¿Eliminar la venta de ${s.name} y restaurar el stock silenciosamente?`;
 
         showConfirm(msg, async () => {
           if (esAbono) {
@@ -1432,28 +1433,26 @@ function renderSalesReport(container) {
               await dbSdk.delete(payment);
             }
           } else {
-            // Lógica para ventas: restaurar stock
+            // Lógica para ventas: restaurar stock silenciosamente (SIN crear movimiento en la tabla)
             const product = allRecords.find(p => p.type === 'product' && p.name === s.name);
             if (product) {
               const qtyToRestore = Number(s.quantity || 1);
               const newStock = Number(product.stock) + qtyToRestore;
+              
+              // Solo actualizamos el inventario real del producto
               await dbSdk.update({ ...product, stock: newStock });
-              await dbSdk.create({
-                type: 'movement', name: product.name, code: product.code, category: 'in',
-                quantity: qtyToRestore, total: newStock, cashier: currentUser?.username || 'admin',
-                description: 'Devolución por venta eliminada en Reportes', date: now(), 
-                buy_price: 0, sell_price: 0, stock: 0, min_stock: 0, payment_method: '', status: 'active', initial_cash: 0, final_cash: 0, sales_total: 0, amount: 0
-              });
+              
+              // ELIMINAMOS la función que creaba el registro en "Movimientos de Stock"
             }
           }
           // Siempre borrar el registro de venta actual
           await dbSdk.delete(s);
-          showToast('Registro eliminado correctamente', 'success');
+          showToast('Venta eliminada y stock restaurado', 'success');
         });
       }
     }
 
-    // B) Revertir Movimiento de Stock
+    // B) Revertir Movimiento de Stock manual
     const delMovBtn = e.target.closest('[data-del-mov]');
     if (delMovBtn) {
       const m = movements.find(r => r.id === delMovBtn.dataset.delMov);

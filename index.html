@@ -654,6 +654,7 @@ document.getElementById('pin-confirm').onclick = async () => {
 // ========== RENDERING ==========
 const app = document.getElementById('app');
 
+// ========== RENDERING (ROUTER PRINCIPAL) ==========
 function render() {
   if (!currentUser && currentView !== 'login') {
     currentView = 'login';
@@ -666,11 +667,12 @@ function render() {
     case 'admin-sales': renderAdminShell(renderSalesReport); break;
     case 'admin-finance': renderAdminShell(renderFinance); break;
     case 'admin-users': renderAdminShell(renderUsersAdmin); break;
-    case 'admin-clients': renderAdminShell(renderClientsAdmin); break; // <--- LÍNEA NUEVA
+    case 'admin-clients': renderAdminShell(renderClientsAdmin); break; 
     case 'admin-settings': renderAdminShell(renderSettings); break;
     case 'cashier-pos': renderCashierPOS(); break;
     case 'cashier-history': renderCashierPOS(); break;
     case 'cashier-close': renderCashierPOS(); break;
+    case 'cashier-abonos': renderCashierPOS(); break; // <--- ESTA ES LA LÍNEA MÁGICA QUE FALTABA
     default: renderLogin();
   }
   lucide.createIcons();
@@ -1901,20 +1903,26 @@ function renderClientsAdmin(container) {
               <td class="p-2 sm:p-3 font-medium truncate max-w-[100px] sm:max-w-none">${c.name}</td>
               <td class="hidden sm:table-cell p-3 text-muted">${c.phone || '-'}</td>
               <td class="p-2 sm:p-3 font-bold ${c.debt > 0 ? 'text-danger' : 'text-success'}">${currency(c.debt || 0)}</td>
-              <td class="p-2 sm:p-3 flex justify-center gap-1 sm:gap-2">
-                <button type="button" onclick="window.openMiniPos('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-accent/10 text-accent rounded-lg hover:bg-accent hover:text-bg transition font-semibold text-xs" title="Distribuir">
-                  <i data-lucide="shopping-cart" class="w-4 h-4 sm:w-3.5 sm:h-3.5 pointer-events-none"></i> <span class="hidden lg:inline ml-1">Distribuir</span>
-                </button>
-                <button type="button" onclick="window.openAbono('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-success/10 text-success rounded-lg hover:bg-success hover:text-bg transition font-semibold text-xs ${c.debt > 0 ? '' : 'opacity-50 cursor-not-allowed'}" ${c.debt > 0 ? '' : 'disabled'} title="Abonar">
-                  <i data-lucide="banknote" class="w-4 h-4 sm:w-3.5 sm:h-3.5 pointer-events-none"></i> <span class="hidden lg:inline ml-1">Abonar</span>
-                </button>
-                <button type="button" onclick="window.openAbonoHistory('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-card border border-surface text-muted rounded-lg hover:bg-surface transition font-semibold text-xs" title="Historial">
-                  <i data-lucide="history" class="w-4 h-4 sm:w-3.5 sm:h-3.5 pointer-events-none"></i> <span class="hidden lg:inline ml-1">Historial</span>
-                </button>
-                <button type="button" onclick="window.deleteClient('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-danger/10 text-danger rounded-lg hover:bg-danger hover:text-bg transition font-semibold text-xs" title="Eliminar Cliente">
-                  <i data-lucide="user-x" class="w-4 h-4 sm:w-3.5 sm:h-3.5 pointer-events-none"></i> <span class="hidden lg:inline ml-1">Eliminar</span>
-                </button>
-              </td>
+              
+<td class="p-2 sm:p-3 flex justify-center gap-1 sm:gap-2">
+  <button type="button" onclick="window.openMiniPos('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-accent/10 text-accent rounded-lg hover:bg-accent hover:text-bg transition font-semibold text-xs" title="Distribuir">
+    <i data-lucide="shopping-cart" class="w-4 h-4 sm:w-3.5 sm:h-3.5"></i> <span class="hidden lg:inline ml-1">Distribuir</span>
+  </button>
+  <button type="button" onclick="window.openAbono('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-success/10 text-success rounded-lg hover:bg-success hover:text-bg transition font-semibold text-xs ${c.debt > 0 ? '' : 'opacity-50 cursor-not-allowed'}" ${c.debt > 0 ? '' : 'disabled'}>
+    <i data-lucide="banknote" class="w-4 h-4 sm:w-3.5 sm:h-3.5"></i> <span class="hidden lg:inline ml-1">Abonar</span>
+  </button>
+  <button type="button" onclick="window.openAbonoHistory('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-card border border-surface text-muted rounded-lg hover:bg-surface transition font-semibold text-xs" title="Historial de Abonos">
+    <i data-lucide="history" class="w-4 h-4 sm:w-3.5 sm:h-3.5"></i> <span class="hidden lg:inline ml-1">Historial</span>
+  </button>
+  
+  <button type="button" onclick="window.openCreditProducts('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-accent2/10 text-accent2 border border-accent2/20 rounded-lg hover:bg-accent2 hover:text-white transition font-semibold text-xs" title="Ver Productos a Crédito">
+    <i data-lucide="package" class="w-4 h-4 sm:w-3.5 sm:h-3.5"></i> <span class="hidden lg:inline ml-1">Productos</span>
+  </button>
+
+  <button type="button" onclick="window.deleteClient('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-danger/10 text-danger rounded-lg hover:bg-danger hover:text-bg transition font-semibold text-xs">
+    <i data-lucide="user-x" class="w-4 h-4 sm:w-3.5 sm:h-3.5"></i>
+  </button>
+</td>
             </tr>`).join('') || '<tr><td colspan="4" class="p-6 text-center text-muted">No hay clientes registrados</td></tr>'}
         </tbody>
       </table>
@@ -2028,7 +2036,38 @@ function renderClientsAdmin(container) {
       </div>
     </div>
 
+    <div id="edit-abono-modal" class="fixed inset-0 z-[9995] hidden items-center justify-center p-4" style="background:rgba(0,0,0,.8)">
+      <div class="bg-surface rounded-2xl w-full max-w-sm shadow-2xl border border-card slide-up p-6 text-center">
+        </div>
+    </div>
+
+  <div id="credit-products-modal" class="fixed inset-0 z-[9992] hidden items-center justify-center p-4" style="background:rgba(0,0,0,.7)">
+      <div class="bg-surface rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl border border-card slide-up">
+        <div class="p-4 border-b border-card flex justify-between items-center bg-accent2/10 rounded-t-2xl">
+          <h2 class="text-lg font-bold flex items-center gap-2 text-accent2"><i data-lucide="package" class="w-5 h-5"></i> Productos Fiados: <span id="credit-client-name" class="text-txt"></span></h2>
+          <button type="button" onclick="document.getElementById('credit-products-modal').classList.replace('flex', 'hidden')" class="p-2 bg-card rounded-lg text-muted hover:text-danger transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-4 flex-1 overflow-y-auto">
+          <table class="w-full text-xs sm:text-sm text-left">
+            <thead>
+              <tr class="text-muted border-b border-card">
+                <th class="p-2">Fecha</th>
+                <th class="p-2">Producto</th>
+                <th class="p-2 text-center">Cant.</th>
+                <th class="p-2 text-right">Total</th>
+                <th class="p-2 text-center">Acción</th> </tr>
+            </thead>
+            <tbody id="credit-products-list"></tbody>
+          </table>
+        </div>
+        <div class="p-4 bg-card/30 border-t border-card text-right">
+           <span class="text-sm text-muted">Deuda total en productos:</span>
+           <span id="credit-products-total" class="ml-2 font-bold text-lg text-danger"></span>
+        </div>
+      </div>
+    </div>
   </div>`;
+  
 
   let activeClient = null;
   let payType = 'contado';
@@ -2384,6 +2423,74 @@ function renderClientsAdmin(container) {
     }
   };
 
+  window.openCreditProducts = (clientId) => {
+    activeClient = clients.find(c => c.id === clientId);
+    if (!activeClient) return;
+
+    document.getElementById('credit-client-name').textContent = activeClient.name;
+    const list = document.getElementById('credit-products-list');
+    
+    // Buscamos en la colección 'credit_sale' (creditos) los registros de este cliente
+    const creditSales = records('credit_sale').filter(s => s.client_id === clientId).sort((a,b) => new Date(b.date) - new Date(a.date));
+    
+    let totalCredito = 0;
+    list.innerHTML = creditSales.map(s => {
+      totalCredito += (s.total || 0);
+      return `
+        <tr class="border-b border-card/50 hover:bg-card/20 transition">
+          <td class="p-2 text-muted text-[10px] sm:text-xs">${s.date ? s.date.slice(0,10) : '-'}</td>
+          <td class="p-2 font-medium text-xs sm:text-sm truncate max-w-[200px]">${s.name}</td>
+          <td class="p-2 text-center font-bold">${s.quantity}</td>
+          <td class="p-2 text-right font-bold text-accent2">${currency(s.total)}</td>
+          <td class="p-2 text-center">
+            <button type="button" onclick="window.deleteCreditProduct('${s.id}')" class="p-1.5 bg-danger/10 text-danger rounded hover:bg-danger hover:text-white transition inline-flex items-center justify-center" title="Eliminar y restaurar stock">
+              <i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('') || '<tr><td colspan="5" class="p-10 text-center text-muted">Este cliente no tiene productos registrados a crédito.</td></tr>';
+
+    document.getElementById('credit-products-total').textContent = currency(totalCredito);
+    
+    lucide.createIcons();
+    const modal = document.getElementById('credit-products-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  };
+
+  // NUEVA FUNCIÓN: Eliminar producto fiado, restaurar stock y ajustar deuda
+  window.deleteCreditProduct = (saleId) => {
+    const sale = records('credit_sale').find(s => s.id === saleId);
+    if (!sale) return;
+
+    showConfirm(`¿Eliminar "${sale.name}" y devolver ${sale.quantity} uds al inventario? La deuda del cliente bajará ${currency(sale.total)}.`, async () => {
+      
+      // 1. Restaurar stock del producto
+      const product = allRecords.find(p => p.type === 'product' && p.name === sale.name);
+      if (product) {
+        const qtyToRestore = Number(sale.quantity || 1);
+        await dbSdk.update({ ...product, stock: Number(product.stock) + qtyToRestore });
+      }
+
+      // 2. Restar la deuda del cliente
+      const client = allRecords.find(c => c.type === 'client' && c.id === sale.client_id);
+      if (client) {
+        const newDebt = Math.max(0, (client.debt || 0) - sale.total);
+        await dbSdk.update({ ...client, debt: newDebt });
+      }
+
+      // 3. Eliminar el registro de la venta a crédito
+      await dbSdk.delete(sale);
+
+      showToast('Producto eliminado, stock y deuda actualizados', 'success');
+
+      // 4. Refrescar la pantalla de fondo y reabrir el modal para ver los cambios
+      renderClientsAdmin(container); 
+      setTimeout(() => window.openCreditProducts(sale.client_id), 100);
+    });
+  };
+
   // ===== FUNCIONES ABONOS E HISTORIAL (SIN CAMBIOS ESTRUCTURALES) =====
   window.openAbono = (clientId) => {
     activeClient = clients.find(c => c.id === clientId);
@@ -2735,9 +2842,10 @@ function renderSettings(container) {
   lucide.createIcons();
 }
 
-// ========== CASHIER POS ==========
+// ========== CASHIER POS (CON CLIENTES, CRÉDITOS Y ABONOS) ==========
 function renderCashierPOS() {
   const products = records('product');
+  const clients = records('client');
 
   if (!cashRegisterOpen && currentView === 'cashier-pos') {
     app.innerHTML = `
@@ -2776,28 +2884,30 @@ function renderCashierPOS() {
 
   let searchTerm = '';
   let paymentMethod = 'Efectivo';
-  let currentPosCategory = ''; // Guarda la categoría activa
-  let showTab = currentView === 'cashier-history' ? 'history' : currentView === 'cashier-close' ? 'close' : 'pos';
+  let currentPosCategory = ''; 
+  let activePosClient = null; // Nuevo: Cliente activo en el POS
+  let showTab = currentView === 'cashier-history' ? 'history' : currentView === 'cashier-close' ? 'close' : currentView === 'cashier-abonos' ? 'abonos' : 'pos';
 
   function cartTotal() { return cart.reduce((a,i)=>a+i.sell_price*i.qty,0); }
 
   app.innerHTML = `
   <div class="h-full w-full flex flex-col" style="min-height:100%;">
-    <header class="bg-surface border-b border-card px-4 py-2 flex items-center justify-between shrink-0">
-      <div class="flex items-center gap-3">
-        <i data-lucide="shopping-bag" class="w-5 h-5 text-accent"></i>
-        <span class="font-bold">${bizName()}</span>
-        <span class="text-xs bg-success/20 text-success px-2 py-0.5 rounded-full">${currentUser?.name || 'Cajero'}</span>
+    <header class="bg-surface border-b border-card px-2 sm:px-4 py-2 flex items-center justify-between shrink-0 overflow-x-auto">
+      <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+        <i data-lucide="shopping-bag" class="w-5 h-5 text-accent hidden sm:block"></i>
+        <span class="font-bold text-sm sm:text-base">${bizName()}</span>
+        <span class="text-[10px] sm:text-xs bg-success/20 text-success px-2 py-0.5 rounded-full">${currentUser?.name || 'Cajero'}</span>
       </div>
-      <div class="flex items-center gap-2">
-        <button data-tab="pos" class="text-sm px-3 py-1.5 rounded-lg transition ${showTab==='pos'?'bg-accent text-bg font-semibold':'text-muted hover:text-txt'}">Venta</button>
-        <button data-tab="history" class="text-sm px-3 py-1.5 rounded-lg transition ${showTab==='history'?'bg-accent text-bg font-semibold':'text-muted hover:text-txt'}">Historial</button>
-        <button data-tab="close" class="text-sm px-3 py-1.5 rounded-lg transition ${showTab==='close'?'bg-warn text-bg font-semibold':'text-muted hover:text-txt'}">Cerrar Caja</button>
-        <button id="cashier-logout" class="text-muted hover:text-danger transition ml-2"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+      <div class="flex items-center gap-1 sm:gap-2 shrink-0 ml-2">
+        <button data-tab="pos" class="text-xs sm:text-sm px-2 sm:px-3 py-1.5 rounded-lg transition ${showTab==='pos'?'bg-accent text-bg font-semibold':'text-muted hover:text-txt'}">Venta</button>
+        <button data-tab="history" class="text-xs sm:text-sm px-2 sm:px-3 py-1.5 rounded-lg transition ${showTab==='history'?'bg-accent text-bg font-semibold':'text-muted hover:text-txt'}">Historial</button>
+        <button data-tab="abonos" class="text-xs sm:text-sm px-2 sm:px-3 py-1.5 rounded-lg transition ${showTab==='abonos'?'bg-accent text-bg font-semibold':'text-muted hover:text-txt'}">Abonos</button>
+        <button data-tab="close" class="text-xs sm:text-sm px-2 sm:px-3 py-1.5 rounded-lg transition ${showTab==='close'?'bg-warn text-bg font-semibold':'text-muted hover:text-txt'}">Cierre</button>
+        <button id="cashier-logout" class="text-muted hover:text-danger transition ml-1 sm:ml-2"><i data-lucide="log-out" class="w-4 h-4"></i></button>
       </div>
     </header>
 
-    <div id="pos-content" class="flex-1 overflow-auto"></div>
+    <div id="pos-content" class="flex-1 overflow-auto bg-bg relative"></div>
   </div>`;
 
   const posContent = document.getElementById('pos-content');
@@ -2805,14 +2915,14 @@ function renderCashierPOS() {
   document.querySelectorAll('[data-tab]').forEach(b => {
     b.onclick = () => {
       showTab = b.dataset.tab;
-      currentView = showTab==='history'?'cashier-history':showTab==='close'?'cashier-close':'cashier-pos';
+      currentView = showTab==='history' ? 'cashier-history' : showTab==='close' ? 'cashier-close' : showTab==='abonos' ? 'cashier-abonos' : 'cashier-pos';
       localStorage.setItem('pos_view', currentView);
       render(); 
     };
   });
   
   document.getElementById('cashier-logout').onclick = () => { 
-    currentUser=null; currentView='login'; cart=[]; 
+    currentUser=null; currentView='login'; cart=[]; activePosClient=null;
     localStorage.removeItem('pos_user'); localStorage.setItem('pos_view', 'login');
     render(); 
   };
@@ -2820,16 +2930,32 @@ function renderCashierPOS() {
   function renderTabContent() {
     if (showTab === 'history') renderCashierHistory();
     else if (showTab === 'close') renderCashierClose();
+    else if (showTab === 'abonos') renderCashierAbonos();
     else renderPOSView();
     lucide.createIcons();
   }
 
   function renderPOSView() {
+    // 1. MAGIA: Refrescar siempre al cliente activo por si su deuda acaba de cambiar en otra venta
+    if (activePosClient) {
+      activePosClient = records('client').find(c => c.id === activePosClient.id) || null;
+    }
+
     posContent.innerHTML = `
-    <div class="flex flex-col lg:flex-row h-full w-full overflow-hidden bg-bg">
+    <div class="flex flex-col lg:flex-row h-full w-full overflow-hidden bg-bg relative">
       
       <div class="flex-1 flex flex-col p-3 sm:p-4 gap-3 h-[60%] lg:h-full overflow-hidden">
         
+        <div class="flex gap-2 bg-surface p-1.5 rounded-xl border border-card shrink-0 shadow-sm">
+          <button id="btn-mode-general" class="flex-1 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-bold transition ${!activePosClient ? 'bg-accent text-bg shadow-sm' : 'text-muted hover:bg-card'}">
+            Público General
+          </button>
+          <button id="btn-mode-client" class="flex-1 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 ${activePosClient ? 'bg-accent text-bg shadow-sm' : 'text-muted hover:bg-card'}">
+            <i data-lucide="user" class="w-4 h-4 pointer-events-none"></i> 
+            <span class="truncate max-w-[120px] sm:max-w-[200px] pointer-events-none">${activePosClient ? activePosClient.name : 'Seleccionar Cliente'}</span>
+          </button>
+        </div>
+
         <div class="flex gap-2 shrink-0">
           <div class="relative flex-1">
             <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted"></i>
@@ -2841,15 +2967,14 @@ function renderCashierPOS() {
         </div>
 
         <div id="pos-categories" class="flex gap-2 overflow-x-auto pb-1 shrink-0" style="scrollbar-width: none;"></div>
-
         <div id="pos-products" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 flex-1 overflow-y-auto content-start pr-1 pb-4"></div>
-        ${!products.length ? '<p class="text-muted text-center mt-8">No hay productos en inventario.<br>Pide al administrador que los agregue.</p>' : ''}
       </div>
 
       <div class="w-full lg:w-[380px] xl:w-[420px] bg-surface border-t lg:border-t-0 lg:border-l border-card flex flex-col h-[40%] lg:h-full shrink-0 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] lg:shadow-none z-10">
-        
         <div class="p-3 sm:p-4 border-b border-card flex justify-between items-center bg-card lg:bg-transparent shrink-0">
-          <h3 class="font-bold flex items-center gap-2"><i data-lucide="shopping-cart" class="w-5 h-5 text-accent"></i>Carrito <span class="text-sm text-muted font-normal">(${cart.length})</span></h3>
+          <h3 class="font-bold flex items-center gap-2">
+            <i data-lucide="shopping-cart" class="w-5 h-5 text-accent"></i>Carrito <span class="text-sm text-muted font-normal">(${cart.length})</span>
+          </h3>
           <button id="clear-cart" class="text-muted text-xs sm:text-sm hover:text-danger transition px-3 py-1.5 rounded-lg bg-surface border border-card lg:border-none lg:bg-transparent font-semibold shadow-sm lg:shadow-none">Vaciar</button>
         </div>
         
@@ -2859,15 +2984,34 @@ function renderCashierPOS() {
           <div class="flex justify-between text-lg sm:text-xl font-extrabold"><span>Total</span><span class="text-success">${currency(cartTotal())}</span></div>
           
           <div class="flex gap-2">
-            <button data-pay="Efectivo" class="flex-1 py-3 sm:py-2.5 rounded-xl sm:rounded-lg text-sm font-bold transition ${paymentMethod==='Efectivo'?'bg-success text-bg shadow-md border-success':'bg-card text-muted hover:bg-surface border border-card'}">Efectivo</button>
-            <button data-pay="Transfer" class="flex-1 py-3 sm:py-2.5 rounded-xl sm:rounded-lg text-sm font-bold transition ${paymentMethod==='Transfer'?'bg-accent2 text-bg shadow-md border-accent2':'bg-card text-muted hover:bg-surface border border-card'}">Transfer</button>
+            <button data-pay="Efectivo" class="flex-1 py-2 sm:py-2.5 rounded-xl sm:rounded-lg text-[11px] sm:text-sm font-bold transition ${paymentMethod==='Efectivo'?'bg-success text-bg shadow-md border-success':'bg-card text-muted hover:bg-surface border border-card'}">Efectivo</button>
+            <button data-pay="Transfer" class="flex-1 py-2 sm:py-2.5 rounded-xl sm:rounded-lg text-[11px] sm:text-sm font-bold transition ${paymentMethod==='Transfer'?'bg-accent2 text-bg shadow-md border-accent2':'bg-card text-muted hover:bg-surface border border-card'}">Transfer</button>
+            <button data-pay="Crédito" class="flex-1 py-2 sm:py-2.5 rounded-xl sm:rounded-lg text-[11px] sm:text-sm font-bold transition ${paymentMethod==='Crédito'?'bg-warn text-bg shadow-md border-warn':'bg-card text-muted hover:bg-surface border border-card'} ${!activePosClient ? 'opacity-50 cursor-not-allowed' : ''}" ${!activePosClient ? 'disabled title="Selecciona un cliente primero"' : ''}>Crédito</button>
           </div>
           
-          <button id="checkout-btn" class="w-full bg-warn text-bg font-extrabold py-3.5 sm:py-4 rounded-xl hover:opacity-90 transition shadow-lg text-lg ${cart.length?'':'opacity-50 cursor-not-allowed'}" ${cart.length?'':'disabled'}>
+          <button id="checkout-btn" class="w-full bg-warn text-bg font-extrabold py-3 sm:py-4 rounded-xl hover:opacity-90 transition shadow-lg text-base sm:text-lg ${cart.length?'':'opacity-50 cursor-not-allowed'}" ${cart.length?'':'disabled'}>
             Cobrar ${currency(cartTotal())}
           </button>
         </div>
       </div>
+      
+      <div id="client-selector-modal" class="absolute inset-0 z-50 bg-black/60 hidden items-center justify-center p-4 fade-in">
+        <div class="bg-surface w-full max-w-md rounded-2xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden border border-card">
+          <div class="p-4 border-b border-card flex justify-between items-center bg-card">
+            <h3 class="font-bold flex items-center gap-2"><i data-lucide="users" class="w-5 h-5 text-accent"></i> Seleccionar Cliente</h3>
+            <button id="close-client-selector" class="text-muted hover:text-danger"><i data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+          <div class="p-3 border-b border-card bg-surface">
+             <div class="relative">
+               <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted"></i>
+               <input id="search-client-input" class="w-full bg-card border border-card rounded-lg pl-9 pr-4 py-2.5 text-sm focus:border-accent focus:outline-none" placeholder="Buscar cliente por nombre...">
+             </div>
+          </div>
+          <div id="client-selector-list" class="flex-1 overflow-y-auto p-2 space-y-1">
+             </div>
+        </div>
+      </div>
+
     </div>`;
 
     renderPosCategories(); 
@@ -2876,6 +3020,61 @@ function renderCashierPOS() {
 
     const posSearch = document.getElementById('pos-search');
 
+    // === LÓGICA DEL TOGGLE CLIENTE / PÚBLICO ===
+    const clientSelectorModal = document.getElementById('client-selector-modal');
+    const searchClientInput = document.getElementById('search-client-input');
+    
+    document.getElementById('btn-mode-general').onclick = () => {
+      activePosClient = null;
+      if(paymentMethod === 'Crédito') paymentMethod = 'Efectivo';
+      renderPOSView();
+    };
+
+    document.getElementById('btn-mode-client').onclick = () => {
+      clientSelectorModal.classList.remove('hidden');
+      clientSelectorModal.classList.add('flex');
+      renderClientSelectorList();
+      setTimeout(() => searchClientInput.focus(), 100);
+    };
+
+    document.getElementById('close-client-selector').onclick = () => {
+      clientSelectorModal.classList.remove('flex');
+      clientSelectorModal.classList.add('hidden');
+    };
+
+    searchClientInput.addEventListener('input', renderClientSelectorList);
+
+    function renderClientSelectorList() {
+      const list = document.getElementById('client-selector-list');
+      const term = searchClientInput.value.toLowerCase();
+      
+      // 2. MAGIA: Traer SIEMPRE la lista de clientes fresca y en tiempo real
+      const freshClients = records('client');
+      
+      const filtered = freshClients.filter(c => c.name.toLowerCase().includes(term));
+      
+      list.innerHTML = filtered.map(c => `
+        <button type="button" data-select-client="${c.id}" class="w-full text-left p-3 rounded-lg hover:bg-card transition flex justify-between items-center border border-transparent hover:border-card">
+          <div>
+            <div class="font-bold text-sm">${c.name}</div>
+            <div class="text-xs text-muted">Deuda actual: <span class="${c.debt > 0 ? 'text-danger font-semibold' : 'text-success'}">${currency(c.debt || 0)}</span></div>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-muted"></i>
+        </button>
+      `).join('') || '<div class="text-center p-6 text-muted text-sm">No se encontraron clientes</div>';
+      
+      lucide.createIcons();
+      list.querySelectorAll('[data-select-client]').forEach(btn => {
+        btn.onclick = () => {
+          activePosClient = freshClients.find(c => c.id === btn.dataset.selectClient);
+          clientSelectorModal.classList.remove('flex');
+          clientSelectorModal.classList.add('hidden');
+          renderPOSView();
+        };
+      });
+    }
+
+    // === LÓGICA DEL BUSCADOR DE PRODUCTOS ===
     posSearch.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -2913,17 +3112,19 @@ function renderCashierPOS() {
       }
     });
 
-    posSearch.addEventListener('input', () => { renderProducts(); });
+    posSearch.addEventListener('input', renderProducts);
 
     document.querySelectorAll('[data-pay]').forEach(b => {
-      b.onclick = () => { paymentMethod = b.dataset.pay; renderPOSView(); };
+      b.onclick = () => { 
+        if (b.dataset.pay === 'Crédito' && !activePosClient) return showToast('Selecciona un cliente primero', 'warn');
+        paymentMethod = b.dataset.pay; 
+        renderPOSView(); 
+      };
     });
     
-    // El botón vaciar ahora se asocia correctamente al ID superior
     document.getElementById('clear-cart').onclick = () => { cart = []; renderPOSView(); };
     document.getElementById('checkout-btn').onclick = openPaymentModal;
     
-    // Escudo para no abrir el teclado en móviles si tocan otra parte, pero en PC funciona automático
     posContent.onclick = (e) => {
       if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
         const search = document.getElementById('pos-search');
@@ -2931,28 +3132,13 @@ function renderCashierPOS() {
       }
     };
 
-    window.onkeydown = (e) => {
-      if (currentView !== 'cashier-pos') return; 
-      const activeElement = document.activeElement;
-      if (activeElement && activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
-        if (e.key.length === 1 && window.innerWidth > 1024) { 
-          const search = document.getElementById('pos-search');
-          if(search) search.focus(); 
-        }
-      }
-    };
-    
     lucide.createIcons();
-    if (window.innerWidth > 1024) {
-      setTimeout(() => posSearch.focus(), 100);
-    }
+    if (window.innerWidth > 1024) setTimeout(() => posSearch.focus(), 100);
   }
 
-  // === NUEVA FUNCIÓN: Dibuja y maneja la barra de categorías ===
   function renderPosCategories() {
     const container = document.getElementById('pos-categories');
     if (!container) return;
-
     const categories = records('category');
     const allCats = [{id: 'all', name: 'Todas'}, ...categories];
 
@@ -2965,20 +3151,15 @@ function renderCashierPOS() {
 
     container.querySelectorAll('[data-cat-filter]').forEach(btn => {
        btn.onclick = () => {
-          currentPosCategory = btn.dataset.catFilter;
-          renderPosCategories(); // Actualiza los colores de los botones
-          renderProducts();      // Filtra la cuadrícula abajo
-          
-          // MAGIA: Regresar el cursor (foco) a la barra de búsqueda para el escáner
-          const searchInput = document.getElementById('pos-search');
-          if (searchInput) {
-            searchInput.focus();
-          }
+         currentPosCategory = btn.dataset.catFilter;
+         renderPosCategories(); 
+         renderProducts();      
+         const searchInput = document.getElementById('pos-search');
+         if (searchInput && window.innerWidth > 1024) searchInput.focus();
        };
     });
   }
 
-  // === FUNCIÓN ACTUALIZADA: Tarjetas a prueba de aplastamiento ===
   function renderProducts() {
     const container = document.getElementById('pos-products');
     if (!container) return;
@@ -2994,13 +3175,10 @@ function renderCashierPOS() {
 
     container.innerHTML = filtered.map(p => `
       <div data-add-prod="${p.id}" role="button" tabindex="0" class="bg-card hover:bg-surface border border-card rounded-xl p-3 text-left transition group flex flex-col justify-between h-full min-h-[240px] w-full relative shadow-sm cursor-pointer">
-        
         ${p.stock <= (p.min_stock || 5) ? `<div class="absolute top-0 right-0 bg-warn text-bg text-[10px] px-2 py-0.5 font-bold rounded-bl-lg z-10">Bajo Stock</div>` : ''}
-        
         <div class="w-full h-32 sm:h-36 bg-surface rounded-lg overflow-hidden shrink-0 flex items-center justify-center p-1 mb-2 border border-card/50">
           ${p.image ? `<img src="${p.image}" class="w-full h-full object-contain">` : `<i data-lucide="image" class="text-muted w-10 h-10"></i>`}
         </div>
-        
         <div class="flex flex-col flex-grow w-full justify-between">
           <div>
             <div class="text-sm font-bold text-txt group-hover:text-accent transition leading-tight line-clamp-2">${p.name}</div>
@@ -3031,62 +3209,47 @@ function renderCashierPOS() {
     const container = document.getElementById('cart-items');
     if (!container) return;
     container.innerHTML = cart.length ? cart.map((item, i) => `
-      <div class="bg-card rounded-lg p-3 flex items-center justify-between gap-2">
+      <div class="bg-card rounded-lg p-2.5 sm:p-3 flex items-center justify-between gap-2 border border-surface shadow-sm">
         <div class="flex-1 min-w-0">
-          <div class="text-sm font-medium truncate">${item.name}</div>
-          <div class="text-xs text-muted">${currency(item.sell_price)} c/u</div>
+          <div class="text-xs sm:text-sm font-medium truncate">${item.name}</div>
+          <div class="text-[10px] sm:text-xs text-muted">${currency(item.sell_price)} c/u</div>
         </div>
-        <div class="flex items-center gap-1 bg-surface border border-card rounded-lg p-1">
+        <div class="flex items-center gap-1 bg-surface border border-card rounded-lg p-1 shrink-0">
           <button data-cart-minus="${i}" class="w-6 h-6 rounded flex items-center justify-center hover:bg-danger/20 transition text-sm text-muted hover:text-danger">−</button>
-          
-          <input type="number" step="0.01" data-cart-edit="${i}" value="${item.qty}" class="w-14 bg-transparent text-center font-bold text-sm focus:outline-none focus:text-accent" onclick="this.select()">
-          
+          <input type="number" step="0.01" data-cart-edit="${i}" value="${item.qty}" class="w-10 sm:w-12 bg-transparent text-center font-bold text-xs sm:text-sm focus:outline-none focus:text-accent" onclick="this.select()">
           <button data-cart-plus="${i}" class="w-6 h-6 rounded flex items-center justify-center hover:bg-success/20 transition text-sm text-muted hover:text-success">+</button>
         </div>
-        <span class="font-semibold text-sm w-20 text-right">${currency(item.sell_price * item.qty)}</span>
-      </div>`).join('') : '<p class="text-muted text-center text-sm mt-8">Carrito vacío</p>';
+        <span class="font-bold text-success text-sm sm:text-base w-16 sm:w-20 text-right shrink-0">${currency(item.sell_price * item.qty)}</span>
+      </div>`).join('') : '<div class="flex flex-col items-center justify-center h-full text-muted opacity-50 pt-10"><i data-lucide="shopping-cart" class="w-12 h-12 mb-3"></i><p class="text-sm">Carrito vacío</p></div>';
 
     container.querySelectorAll('[data-cart-minus]').forEach(b => {
-      b.onclick = () => { 
-        const i=parseInt(b.dataset.cartMinus); 
-        cart[i].qty--; 
-        if(cart[i].qty<=0) cart.splice(i,1); 
-        renderPOSView(); 
-      };
+      b.onclick = () => { const i=parseInt(b.dataset.cartMinus); cart[i].qty--; if(cart[i].qty<=0) cart.splice(i,1); renderPOSView(); };
     });
-
     container.querySelectorAll('[data-cart-plus]').forEach(b => {
-      b.onclick = () => { 
-        const i=parseInt(b.dataset.cartPlus); 
-        if(cart[i].qty < cart[i].maxStock) cart[i].qty++; 
-        else showToast('Stock máximo superado','warn'); 
-        renderPOSView(); 
-      };
+      b.onclick = () => { const i=parseInt(b.dataset.cartPlus); if(cart[i].qty < cart[i].maxStock) cart[i].qty++; else showToast('Stock máximo superado','warn'); renderPOSView(); };
     });
-
     container.querySelectorAll('[data-cart-edit]').forEach(input => {
       input.addEventListener('change', (e) => {
         const i = parseInt(e.target.dataset.cartEdit);
         let val = parseFloat(e.target.value);
-        
-        if (isNaN(val) || val <= 0) {
-          cart.splice(i, 1); 
-        } else if (val > cart[i].maxStock) {
-          showToast('Stock máximo superado', 'warn');
-          cart[i].qty = cart[i].maxStock; 
-        } else {
-          cart[i].qty = val;
-        }
+        if (isNaN(val) || val <= 0) cart.splice(i, 1); 
+        else if (val > cart[i].maxStock) { showToast('Stock máximo superado', 'warn'); cart[i].qty = cart[i].maxStock; } 
+        else cart[i].qty = val;
         renderPOSView();
       });
     });
   }
 
-  let currentCashReceived = 0;
-
   function openPaymentModal() {
     if (!cart.length) return;
     const total = cartTotal();
+
+    // Si es crédito, omitimos el modal de efectivo y procesamos directo
+    if (paymentMethod === 'Crédito') {
+      if (!activePosClient) return showToast('Selecciona un cliente para dar crédito', 'warn');
+      processCheckoutAndShowReceipt(total, 0); // En crédito no se recibe efectivo al instante
+      return;
+    }
     
     document.getElementById('payment-total').textContent = currency(total);
     document.getElementById('payment-remaining').textContent = currency(total);
@@ -3103,14 +3266,11 @@ function renderCashierPOS() {
     const modal = document.getElementById('cash-payment-modal');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
-    
     setTimeout(() => inputCash.focus(), 100);
     
     inputCash.oninput = (e) => {
       const val = parseFloat(e.target.value) || 0;
-      currentCashReceived = val;
       document.getElementById('payment-paid').textContent = currency(val);
-      
       if (val >= total) {
         document.getElementById('payment-remaining').textContent = currency(0);
         document.getElementById('pay-change-returned').textContent = currency(val - total);
@@ -3122,54 +3282,47 @@ function renderCashierPOS() {
       }
     };
     
-    document.getElementById('pay-cancel').onclick = () => {
-      modal.classList.remove('flex');
-      modal.classList.add('hidden');
-    };
-    
+    document.getElementById('pay-cancel').onclick = () => { modal.classList.replace('flex', 'hidden'); };
     btnConfirm.onclick = () => {
-      btnConfirm.disabled = true;
-      btnConfirm.textContent = 'Procesando...';
-      processCheckoutAndShowReceipt(total, currentCashReceived);
+      btnConfirm.disabled = true; btnConfirm.textContent = 'Procesando...';
+      processCheckoutAndShowReceipt(total, parseFloat(inputCash.value) || 0);
     };
   }
 
   async function processCheckoutAndShowReceipt(total, cashReceived) {
     try {
       const ticketNum = Math.floor(Math.random() * 9000) + 1000; 
-      const dateOpts = { day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true };
-      const dateTime = new Date().toLocaleString('es-MX', dateOpts);
+      const dateTime = new Date().toLocaleString('es-MX');
+      const isCredit = paymentMethod === 'Crédito';
 
       for (const item of cart) {
         await dbSdk.create({
-          type:'sale', name: item.name, code:'', category:'',
+          type: isCredit ? 'credit_sale' : 'sale', 
+          name: item.name, code:'', category:'',
           buy_price: item.buy_price, sell_price: item.sell_price,
-          stock:0, min_stock:0, quantity: item.qty,
-          total: item.sell_price * item.qty,
-          payment_method: paymentMethod,
-          cashier: currentUser?.username || 'cajero',
-          date: now(), amount: item.sell_price * item.qty,
-          description:'', status:'completed',
-          initial_cash:0, final_cash:0, sales_total:0,
-          ticket_num: ticketNum,
-          order_total: total,
-          cash_received: cashReceived,
-          change_returned: cashReceived - total
+          stock:0, min_stock:0, quantity: item.qty, total: item.sell_price * item.qty,
+          payment_method: paymentMethod, cashier: currentUser?.username || 'cajero',
+          date: now(), amount: item.sell_price * item.qty, description:'', status:'completed',
+          initial_cash:0, final_cash:0, sales_total:0, ticket_num: ticketNum,
+          order_total: total, cash_received: cashReceived, change_returned: isCredit ? 0 : (cashReceived - total),
+          client_id: activePosClient ? activePosClient.id : '',
+          client_name: activePosClient ? activePosClient.name : 'Público General'
         });
 
         const prodRec = allRecords.find(r => r.id === item.id);
-        if (prodRec) {
-          await dbSdk.update({ ...prodRec, stock: Math.max(0, prodRec.stock - item.qty) });
-        }
+        if (prodRec) await dbSdk.update({ ...prodRec, stock: Math.max(0, prodRec.stock - item.qty) });
+      }
+
+      // Si es crédito, actualizamos la deuda del cliente
+      if (isCredit && activePosClient) {
+        const clientRec = records('client').find(c => c.id === activePosClient.id);
+        if (clientRec) await dbSdk.update({ ...clientRec, debt: (clientRec.debt || 0) + total });
       }
 
       const itemsHtml = cart.map(item => `
         <div class="flex justify-between items-start">
-          <span class="w-8">${item.qty}x</span>
-          <span class="flex-1 text-left uppercase truncate px-1">${item.name}</span>
-          <span class="w-16 text-right">${currency(item.sell_price * item.qty)}</span>
-        </div>
-      `).join('');
+          <span class="w-8">${item.qty}x</span><span class="flex-1 text-left uppercase truncate px-1">${item.name}</span><span class="w-16 text-right">${currency(item.sell_price * item.qty)}</span>
+        </div>`).join('');
 
       const sysLogo = getSystemLogo();
       const logoPrintHtml = sysLogo ? `<img src="${sysLogo}" style="max-width: 140px; max-height: 80px; margin: 0 auto 10px auto; display: block; object-fit: contain;">` : '';
@@ -3179,115 +3332,330 @@ function renderCashierPOS() {
         ${logoPrintHtml}
         <div class="text-2xl font-bold tracking-tight uppercase">${bizName()}</div>
         <div class="text-xs mt-1">
-         <div class="font-bold">TICKET DE VENTA</div>
-         <div>Sucursal Principal</div>
+         <div class="font-bold">${isCredit ? 'NOTA DE REMISIÓN / CRÉDITO' : 'TICKET DE VENTA'}</div>
+         <div>Cliente: <span class="font-bold uppercase">${activePosClient ? activePosClient.name : 'PÚBLICO GENERAL'}</span></div>
          <div class="font-bold mt-1">${dateTime}</div>
          <div>TICKET #${ticketNum}</div>
         </div>
        </div>
        <div class="w-full border-t-2 border-dashed border-gray-400 mb-2"></div>
-       <div class="w-full flex justify-between font-bold text-xs mb-1">
-          <span>CANT</span>
-          <span class="flex-1 ml-2">DESCRIPCIÓN</span>
-          <span class="text-right w-16">IMPORTE</span>
-       </div>
-       <div class="w-full text-xs space-y-1">
-          ${itemsHtml}
-       </div>
+       <div class="w-full flex justify-between font-bold text-xs mb-1"><span>CANT</span><span class="flex-1 ml-2">DESCRIPCIÓN</span><span class="text-right w-16">IMPORTE</span></div>
+       <div class="w-full text-xs space-y-1">${itemsHtml}</div>
        <div class="w-full border-t-2 border-dashed border-gray-400 mt-2 mb-2"></div>
-       <div class="w-full flex justify-between items-center text-base font-bold mb-2">
-          <span>TOTAL:</span>
-          <span class="text-lg">${currency(total)}</span>
-       </div>
+       <div class="w-full flex justify-between items-center text-base font-bold mb-2"><span>TOTAL:</span><span class="text-lg">${currency(total)}</span></div>
        <div class="w-full border-t border-solid border-gray-300 mb-2"></div>
        <div class="w-full text-xs space-y-1">
-        <div class="font-bold text-center mb-1">DETALLE DE PAGO</div>
-        <div class="flex justify-between"><span>PAGÓ CON (${paymentMethod}):</span><span>${currency(cashReceived)}</span></div>
-        <div class="flex justify-between font-bold text-sm mt-1"><span>SU CAMBIO:</span><span>${currency(cashReceived - total)}</span></div>
+        <div class="font-bold text-center mb-1">ESTADO DE CUENTA</div>
+        <div class="flex justify-between"><span>CONDICIÓN:</span><span class="font-bold uppercase">${isCredit ? 'A CRÉDITO' : 'PAGADO ('+paymentMethod+')'}</span></div>
+        ${isCredit ? `<div class="flex justify-between font-bold text-sm mt-1 text-danger"><span>NUEVO SALDO DEUDOR:</span><span>${currency((activePosClient.debt || 0) + total)}</span></div>` : 
+        `<div class="flex justify-between"><span>PAGÓ CON:</span><span>${currency(cashReceived)}</span></div><div class="flex justify-between font-bold text-sm mt-1"><span>SU CAMBIO:</span><span>${currency(cashReceived - total)}</span></div>`}
        </div>
        <div class="w-full border-t-2 border-dashed border-gray-400 mt-3 mb-2"></div>
-       <div class="text-center text-xs space-y-1">
-        <div class="font-bold">¡GRACIAS POR SU COMPRA!</div>
-        <div>Vuelva pronto</div>
-        <div class="text-[10px] mt-2 text-gray-500">Este documento no es un comprobante fiscal</div>
-       </div>
+       ${isCredit ? '<div class="text-center text-[10px] text-gray-500 mt-2">Firma de recibido o conformidad del cliente.</div><div class="w-3/4 mx-auto border-b border-gray-400 mt-8"></div>' : '<div class="text-center text-xs space-y-1"><div class="font-bold">¡GRACIAS POR SU COMPRA!</div><div>Vuelva pronto</div></div>'}
       `;
 
       document.getElementById('printable-ticket').innerHTML = ticketHtml;
+      
+      // Ocultar modal de pago si estaba abierto
+      const paymentModal = document.getElementById('cash-payment-modal');
+      if (paymentModal) paymentModal.classList.replace('flex', 'hidden');
+      
+      const receiptModal = document.getElementById('receipt-modal');
+      receiptModal.classList.remove('hidden'); receiptModal.classList.add('flex');
+      
+      const btnConfirm = document.getElementById('pay-confirm');
+      if(btnConfirm) { btnConfirm.textContent = 'PAGAR'; btnConfirm.disabled = false; }
+      
+      document.getElementById('receipt-close').onclick = () => {
+        receiptModal.classList.replace('flex', 'hidden');
+        cart = []; 
+        renderPOSView(); 
+        showToast(isCredit ? 'Crédito registrado ✓' : 'Venta completada ✓');
+      };
+    } catch (error) {
+      console.error(error); showToast('Error de conexión, intenta de nuevo', 'error');
+      const btnConfirm = document.getElementById('pay-confirm');
+      if(btnConfirm) { btnConfirm.textContent = 'Reintentar PAGO'; btnConfirm.disabled = false; }
+    }
+  }
 
-      document.getElementById('cash-payment-modal').classList.remove('flex');
-      document.getElementById('cash-payment-modal').classList.add('hidden');
+// ===== PESTAÑA: ABONOS (CAJERO - SOLO LECTURA Y PAGOS) =====
+function renderCashierAbonos() {
+    // Filtramos SOLO a los clientes que tienen una deuda mayor a 0
+    const clientsWithDebt = records('client').filter(c => c.debt > 0).sort((a,b) => b.debt - a.debt);
+    
+    posContent.innerHTML = `
+    <div class="p-4 fade-in space-y-4 max-w-4xl mx-auto h-full flex flex-col">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center shrink-0 gap-2">
+        <h2 class="text-xl font-bold">Cuentas por Cobrar</h2>
+        <div class="text-sm bg-danger/10 text-danger px-3 py-1.5 rounded-lg font-bold">Total por recuperar: ${currency(clientsWithDebt.reduce((a,b) => a+b.debt, 0))}</div>
+      </div>
+      
+      <div class="bg-surface rounded-xl border border-card flex-1 overflow-hidden flex flex-col shadow-sm">
+        <table class="w-full text-xs sm:text-sm text-left">
+          <thead class="bg-surface/50 shrink-0">
+            <tr class="text-muted border-b border-card">
+              <th class="p-3">Cliente</th>
+              <th class="p-3 text-right">Deuda Actual</th>
+              <th class="p-3 text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="overflow-y-auto block w-full" style="max-height: calc(100vh - 220px);">
+            ${clientsWithDebt.map(c => `
+              <tr class="border-b border-card/50 hover:bg-card/30 transition table w-full table-fixed">
+                <td class="p-3 font-bold truncate">${c.name}</td>
+                <td class="p-3 font-extrabold text-danger text-right text-base sm:text-lg">${currency(c.debt)}</td>
+                <td class="p-3 flex justify-center gap-2">
+                  <button type="button" onclick="window.cashierOpenAbono('${c.id}')" class="px-3 py-1.5 sm:px-4 sm:py-2 bg-success text-bg font-bold rounded-lg hover:opacity-90 transition shadow-sm flex items-center gap-1.5 text-xs sm:text-sm">
+                    <i data-lucide="banknote" class="w-4 h-4 pointer-events-none"></i><span class="hidden sm:inline">Abonar</span>
+                  </button>
+                  <button type="button" onclick="window.cashierOpenHistory('${c.id}')" class="px-3 py-1.5 sm:px-4 sm:py-2 bg-card border border-surface text-muted font-bold rounded-lg hover:bg-surface transition shadow-sm flex items-center gap-1.5 text-xs sm:text-sm">
+                    <i data-lucide="history" class="w-4 h-4 pointer-events-none"></i><span class="hidden sm:inline">Historial</span>
+                  </button>
+                </td>
+              </tr>
+            `).join('') || '<tr class="table w-full"><td colspan="3" class="p-10 text-center text-muted">No hay clientes con deudas pendientes. ¡Excelente!</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+
+      <div id="cashier-abono-modal" class="fixed inset-0 z-[9990] hidden items-center justify-center p-4" style="background:rgba(0,0,0,.7)">
+        <div class="bg-surface rounded-2xl w-full max-w-sm shadow-2xl border border-card slide-up p-6 text-center">
+          <div class="w-16 h-16 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-3"><i data-lucide="banknote" class="w-8 h-8 text-success"></i></div>
+          <h2 class="text-xl font-bold mb-1">Recibir Abono</h2>
+          <p class="text-sm text-muted mb-4" id="cashier-abono-client"></p>
+          <div class="bg-card rounded-xl p-3 mb-5 border border-surface">
+            <div class="text-xs text-muted">Deuda Actual:</div>
+            <div id="cashier-abono-debt" class="text-2xl font-bold text-danger"></div>
+          </div>
+          <div class="text-left mb-6">
+            <label class="block text-sm font-semibold mb-2">Monto que paga el cliente ($)</label>
+            <input id="cashier-abono-amount" type="number" step="0.01" class="w-full bg-card border-2 border-success/50 rounded-xl px-4 py-3 text-center text-2xl font-bold focus:border-success focus:outline-none" placeholder="0.00">
+          </div>
+          <div class="flex gap-3">
+            <button type="button" onclick="document.getElementById('cashier-abono-modal').classList.replace('flex','hidden')" class="flex-1 py-3 rounded-xl bg-card text-muted font-semibold hover:bg-bg transition">Cancelar</button> 
+            <button type="button" id="cashier-btn-abono" class="flex-1 py-3 rounded-xl bg-success text-bg font-bold hover:opacity-90 transition shadow-lg">Aplicar Pago</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="cashier-history-modal" class="fixed inset-0 z-[9991] hidden items-center justify-center p-4" style="background:rgba(0,0,0,.7)">
+        <div class="bg-surface rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl border border-card slide-up">
+          <div class="p-4 border-b border-card flex justify-between items-center bg-surface rounded-t-2xl shrink-0">
+            <h2 class="text-lg font-bold flex items-center gap-2"><i data-lucide="history" class="text-accent w-5 h-5"></i> Historial de Abonos: <span id="cashier-history-client-name" class="text-txt"></span></h2>
+            <button type="button" onclick="document.getElementById('cashier-history-modal').classList.replace('flex', 'hidden')" class="p-2 bg-card rounded-lg text-muted hover:text-danger transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+          <div class="p-0 sm:p-4 flex-1 overflow-y-auto">
+            <table class="w-full text-xs sm:text-sm text-left">
+              <thead class="bg-surface/50 sm:bg-transparent">
+                <tr class="text-muted border-b border-card">
+                  <th class="p-2 sm:pb-2">Fecha</th>
+                  <th class="p-2 sm:pb-2 hidden sm:table-cell">Ticket</th>
+                  <th class="p-2 sm:pb-2 text-right">Abono</th>
+                  <th class="p-2 sm:pb-2 text-center">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="cashier-history-list"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>`;
+
+    let abonoClientSelected = null;
+
+    window.cashierOpenAbono = (id) => {
+      abonoClientSelected = records('client').find(c => c.id === id);
+      if(!abonoClientSelected) return;
+      document.getElementById('cashier-abono-client').textContent = abonoClientSelected.name;
+      document.getElementById('cashier-abono-debt').textContent = currency(abonoClientSelected.debt);
+      document.getElementById('cashier-abono-amount').value = '';
+      document.getElementById('cashier-abono-modal').classList.remove('hidden');
+      document.getElementById('cashier-abono-modal').classList.add('flex');
+      setTimeout(() => document.getElementById('cashier-abono-amount').focus(), 100);
+    };
+
+    document.getElementById('cashier-btn-abono').onclick = async () => {
+      if(!abonoClientSelected) return;
+      const amount = parseFloat(document.getElementById('cashier-abono-amount').value);
+      if(!amount || amount <= 0 || amount > abonoClientSelected.debt) return showToast('Monto inválido', 'warn');
+
+      const btn = document.getElementById('cashier-btn-abono');
+      btn.disabled = true; btn.textContent = 'Procesando...';
+
+      const newDebt = abonoClientSelected.debt - amount;
+      const ticketNum = Math.floor(Math.random() * 90000) + 10000;
+
+      try {
+        await dbSdk.create({
+          type: 'payment', name: `Abono de ${abonoClientSelected.name}`, amount: amount,
+          client_id: abonoClientSelected.id, client_name: abonoClientSelected.name,
+          date: now(), ticket_num: ticketNum, cashier: currentUser?.username || 'cajero',
+          remaining_debt: newDebt
+        });
+        
+        await dbSdk.create({
+           type: 'sale', name: `ABONO: ${abonoClientSelected.name}`, quantity: 1,
+           total: amount, payment_method: 'Efectivo', cashier: currentUser?.username || 'cajero',
+           date: now(), ticket_num: ticketNum, status: 'abono'
+        });
+        
+        await dbSdk.update({ ...abonoClientSelected, debt: newDebt });
+
+        const sysLogo = getSystemLogo();
+        const logoPrintHtml = sysLogo ? `<img src="${sysLogo}" style="max-width: 140px; max-height: 80px; margin: 0 auto 10px auto; display: block; object-fit: contain;">` : '';
+        const ticketHtml = `
+         <div class="text-center mb-3">
+          ${logoPrintHtml}
+          <div class="text-2xl font-bold tracking-tight uppercase">${bizName()}</div>
+          <div class="text-xs mt-1">
+           <div class="font-bold">${newDebt === 0 ? 'COMPROBANTE DE LIQUIDACIÓN' : 'RECIBO DE PAGO / ABONO'}</div>
+           <div>Cliente: <span class="font-bold uppercase">${abonoClientSelected.name}</span></div>
+           <div class="font-bold mt-1">${new Date().toLocaleString('es-MX')}</div>
+           <div>FOLIO #${ticketNum}</div>
+          </div>
+         </div>
+         <div class="w-full border-t-2 border-dashed border-gray-400 my-4"></div>
+         <div class="w-full text-sm space-y-2">
+          <div class="flex justify-between"><span>Deuda Anterior:</span><span>${currency(abonoClientSelected.debt)}</span></div>
+          <div class="flex justify-between font-bold text-success text-base"><span>SU PAGO (ABONO):</span><span>- ${currency(amount)}</span></div>
+          <div class="w-full border-t border-solid border-gray-300 my-2"></div>
+          <div class="flex justify-between font-bold text-base"><span>SALDO RESTANTE:</span><span class="${newDebt===0?'text-success':'text-danger'}">${currency(newDebt)}</span></div>
+         </div>
+         <div class="w-full border-t-2 border-dashed border-gray-400 mt-4 mb-2"></div>
+         <div class="text-center text-xs mt-4 font-bold">${newDebt === 0 ? '¡CUENTA LIQUIDADA! GRACIAS.' : 'Gracias por su abono.'}</div>
+        `;
+        document.getElementById('printable-ticket').innerHTML = ticketHtml;
+        
+        document.getElementById('cashier-abono-modal').classList.replace('flex','hidden');
+        
+        const receiptModal = document.getElementById('receipt-modal');
+        receiptModal.classList.remove('hidden'); receiptModal.classList.add('flex');
+        
+        document.getElementById('receipt-close').onclick = () => {
+          receiptModal.classList.replace('flex', 'hidden');
+          showToast('Abono registrado en caja', 'success');
+          renderCashierAbonos(); 
+        };
+
+      } catch(e) {
+        console.error(e); showToast('Error al registrar pago', 'error');
+        btn.disabled = false; btn.textContent = 'Aplicar Pago';
+      }
+    };
+
+    // ===== LÓGICA DEL HISTORIAL DE CAJERO (SEGURO / SIN ELIMINAR) =====
+    window.cashierOpenHistory = (id) => {
+      abonoClientSelected = records('client').find(c => c.id === id);
+      if (!abonoClientSelected) return;
+      
+      document.getElementById('cashier-history-client-name').textContent = abonoClientSelected.name;
+      
+      const clientPayments = records('payment').filter(p => p.client_id === abonoClientSelected.id).sort((a,b) => new Date(b.date) - new Date(a.date));
+      const list = document.getElementById('cashier-history-list');
+      
+      list.innerHTML = clientPayments.map(p => `
+        <tr class="border-b border-card/50 hover:bg-surface transition">
+          <td class="p-2 sm:p-3 text-muted text-xs sm:text-sm">${p.date ? p.date.slice(0,16).replace('T', ' ') : '-'}</td>
+          <td class="p-2 sm:p-3 text-muted text-xs sm:text-sm hidden sm:table-cell">#${p.ticket_num || '-'}</td>
+          <td class="p-2 sm:p-3 font-bold text-success text-xs sm:text-sm text-right">${currency(p.amount)}</td>
+          <td class="p-2 sm:p-3 text-center">
+            <button type="button" onclick="window.cashierViewAbonoTicket('${p.id}')" class="px-2.5 py-1.5 bg-surface border border-card text-txt rounded-lg hover:bg-card transition flex items-center justify-center gap-1.5 text-xs font-semibold mx-auto" title="Ver Ticket">
+              <i data-lucide="receipt" class="w-3.5 h-3.5 pointer-events-none"></i> <span class="hidden sm:inline">Ticket</span>
+            </button>
+          </td>
+        </tr>
+      `).join('') || '<tr><td colspan="4" class="py-6 text-center text-muted">Aún no hay abonos registrados para este cliente.</td></tr>';
+      
+      lucide.createIcons();
+      document.getElementById('cashier-history-modal').classList.remove('hidden');
+      document.getElementById('cashier-history-modal').classList.add('flex');
+    };
+
+    window.cashierViewAbonoTicket = (paymentId) => {
+      const payment = records('payment').find(p => p.id === paymentId);
+      if (!payment) return;
+      
+      const sysLogo = getSystemLogo();
+      const logoPrintHtml = sysLogo ? `<img src="${sysLogo}" style="max-width: 140px; max-height: 80px; margin: 0 auto 10px auto; display: block; object-fit: contain;">` : '';
+      
+      const ticketHtml = `
+       <div class="text-center mb-3">
+        ${logoPrintHtml}
+        <div class="text-2xl font-bold tracking-tight uppercase">${bizName()}</div>
+        <div class="text-xs mt-1">
+         <div class="font-bold">RECIBO DE PAGO / ABONO (COPIA)</div>
+         <div>Cliente: <span class="font-bold uppercase">${payment.client_name}</span></div>
+         <div class="font-bold mt-1">${new Date(payment.date).toLocaleString('es-MX')}</div>
+         <div>FOLIO #${payment.ticket_num || '-'}</div>
+        </div>
+       </div>
+       <div class="w-full border-t-2 border-dashed border-gray-400 my-4"></div>
+       <div class="w-full text-sm space-y-2">
+        <div class="flex justify-between font-bold text-success text-base"><span>PAGO (ABONO):</span><span>${currency(payment.amount)}</span></div>
+        <div class="w-full border-t border-solid border-gray-300 my-2"></div>
+        <div class="flex justify-between font-bold text-sm text-muted">
+          <span>SALDO RESTANTE EN ESE MOMENTO:</span>
+          <span>${currency(payment.remaining_debt || 0)}</span>
+        </div>
+       </div>
+       <div class="w-full border-t-2 border-dashed border-gray-400 mt-4 mb-2"></div>
+       <div class="text-center text-xs mt-4 font-bold">Copia de comprobante de abono histórico.</div>
+      `;
+      
+      document.getElementById('printable-ticket').innerHTML = ticketHtml;
       
       document.getElementById('receipt-modal').classList.remove('hidden');
       document.getElementById('receipt-modal').classList.add('flex');
       
-      const btnConfirm = document.getElementById('pay-confirm');
-      btnConfirm.textContent = 'PAGAR';
-      btnConfirm.disabled = false; 
-      
       document.getElementById('receipt-close').onclick = () => {
-        document.getElementById('receipt-modal').classList.remove('flex');
-        document.getElementById('receipt-modal').classList.add('hidden');
-        cart = []; 
-        renderPOSView(); 
-        showToast('Venta registrada con éxito ✓');
+        document.getElementById('receipt-modal').classList.replace('flex', 'hidden');
       };
+    };
 
-    } catch (error) {
-      console.error("Error procesando pago:", error);
-      showToast('Error de conexión, intenta de nuevo', 'error');
-      const btnConfirm = document.getElementById('pay-confirm');
-      btnConfirm.textContent = 'Reintentar PAGO';
-      btnConfirm.disabled = false; 
-    }
+    lucide.createIcons();
   }
 
+  // ===== OTRAS PESTAÑAS (HISTORIAL Y CIERRE) =====
   function renderCashierHistory() {
     const mySales = records('sale').filter(s => s.cashier === (currentUser?.username||''));
     const todayMySales = mySales.filter(s => sessionStart && s.date >= sessionStart);
     
     posContent.innerHTML = `
     <div class="p-4 fade-in space-y-4 max-w-4xl mx-auto">
-      <h2 class="text-xl font-bold">Ventas del Turno Actual</h2>
+      <h2 class="text-xl font-bold">Movimientos del Turno Actual</h2>
       <div class="grid grid-cols-2 gap-4">
-        <div class="bg-surface rounded-xl p-4 border border-card text-center">
-          <div class="text-muted text-sm">Ventas de Turno</div>
+        <div class="bg-surface rounded-xl p-4 border border-card text-center shadow-sm">
+          <div class="text-muted text-sm">Ingresos del Turno</div>
           <div class="text-2xl font-bold text-success mt-1">${currency(todayMySales.reduce((a,s)=>a+(s.total||0),0))}</div>
         </div>
-        <div class="bg-surface rounded-xl p-4 border border-card text-center">
+        <div class="bg-surface rounded-xl p-4 border border-card text-center shadow-sm">
           <div class="text-muted text-sm">Transacciones</div>
           <div class="text-2xl font-bold text-accent mt-1">${todayMySales.length}</div>
         </div>
       </div>
-      <div class="bg-surface rounded-xl border border-card overflow-x-auto">
+      <div class="bg-surface rounded-xl border border-card overflow-x-auto shadow-sm">
         <table class="w-full text-sm">
-          <thead><tr class="text-muted text-left border-b border-card"><th class="p-3">Hora</th><th class="p-3">Producto</th><th class="p-3">Cant</th><th class="p-3">Total</th><th class="p-3">Pago</th><th class="p-3 text-center">Acciones</th></tr></thead>
+          <thead><tr class="text-muted text-left border-b border-card bg-surface/50"><th class="p-3">Hora</th><th class="p-3">Concepto</th><th class="p-3">Total</th><th class="p-3">Pago</th><th class="p-3 text-center">Ticket</th></tr></thead>
           <tbody>
             ${todayMySales.slice().reverse().map(s => `
               <tr class="border-b border-card/50 hover:bg-card/30 transition">
                 <td class="p-3 text-muted">${s.date ? s.date.slice(11,16) : '-'}</td>
-                <td class="p-3 font-medium">${s.name||'-'}</td>
-                <td class="p-3">${s.quantity||1}</td>
+                <td class="p-3 font-medium">${s.status === 'abono' ? `<span class="text-success flex items-center gap-1"><i data-lucide="banknote" class="w-4 h-4 shrink-0"></i> ${s.name}</span>` : s.name||'-'}</td>
                 <td class="p-3 font-semibold">${currency(s.total)}</td>
-                <td class="p-3"><span class="text-xs px-2 py-0.5 rounded-full ${s.payment_method==='Efectivo'?'bg-success/20 text-success':'bg-accent/20 text-accent'}">${s.payment_method||'-'}</span></td>
-                <td class="p-3 text-center flex justify-center gap-2">
-                  <button type="button" data-view-ticket="${s.id}" class="p-2 bg-accent/10 text-accent rounded-lg hover:bg-accent/20 transition" title="Ver Ticket">
-                    <i data-lucide="receipt" class="w-4 h-4 pointer-events-none"></i>
-                  </button>
-                  <button type="button" onclick="window.requestRefund('${s.id}')" class="p-2 bg-danger/10 text-danger rounded-lg hover:bg-danger/20 transition" title="Hacer Devolución">
-                    <i data-lucide="rotate-ccw" class="w-4 h-4 pointer-events-none"></i>
-                  </button>
+                <td class="p-3"><span class="text-[10px] sm:text-xs px-2 py-0.5 rounded-full ${s.payment_method==='Efectivo'?'bg-success/20 text-success':s.payment_method==='Crédito'?'bg-warn/20 text-warn':'bg-accent/20 text-accent'}">${s.payment_method||'-'}</span></td>
+                <td class="p-3 text-center">
+                  <button type="button" data-view-ticket="${s.id}" class="p-2 bg-accent/10 text-accent rounded-lg hover:bg-accent/20 transition" title="Ver Ticket"><i data-lucide="receipt" class="w-4 h-4 pointer-events-none"></i></button>
                 </td>
-              </tr>`).join('') || '<tr><td colspan="6" class="p-6 text-center text-muted">Sin ventas en este turno</td></tr>'}
+              </tr>`).join('') || '<tr><td colspan="5" class="p-6 text-center text-muted">Sin movimientos en este turno</td></tr>'}
           </tbody>
         </table>
       </div>
     </div>`;
 
     posContent.querySelectorAll('[data-view-ticket]').forEach(btn => {
-      btn.onclick = () => {
-        showTicketFromHistory(btn.dataset.viewTicket);
-      };
+      btn.onclick = () => { showTicketFromHistory(btn.dataset.viewTicket); };
     });
   }
 
@@ -3300,73 +3668,55 @@ function renderCashierPOS() {
       : [clickedSale]; 
 
     const ticketNum = clickedSale.ticket_num || new Date(clickedSale.date || Date.now()).getTime().toString().slice(-4); 
-    const dateOpts = { day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true };
-    const saleDate = clickedSale.date ? new Date(clickedSale.date) : new Date();
-    const dateTime = saleDate.toLocaleString('es-MX', dateOpts);
-
-    const orderTotal = clickedSale.order_total || clickedSale.total;
-    const cashPaid = clickedSale.cash_received || clickedSale.total;
-    const change = clickedSale.change_returned || 0;
-
-    const itemsHtml = relatedSales.map(item => `
-      <div class="flex justify-between items-start">
-        <span class="w-8">${item.quantity||1}x</span>
-        <span class="flex-1 text-left uppercase truncate px-1">${item.name}</span>
-        <span class="w-16 text-right">${currency(item.total)}</span>
-      </div>
-    `).join('');
-
-    const sysLogo = getSystemLogo();
-    const logoPrintHtml = sysLogo ? `<img src="${sysLogo}" style="max-width: 140px; max-height: 80px; margin: 0 auto 10px auto; display: block; object-fit: contain;">` : '';
-
-    const ticketHtml = `
-     <div class="text-center mb-3">
-      ${logoPrintHtml}
-      <div class="text-2xl font-bold tracking-tight uppercase">${bizName()}</div>
-      <div class="text-xs mt-1">
-       <div class="font-bold">TICKET DE VENTA (COPIA)</div>
-       <div>Sucursal Principal</div>
-       <div class="font-bold mt-1">${dateTime}</div>
-       <div>TICKET #${ticketNum}</div>
-      </div>
-     </div>
-     <div class="w-full border-t-2 border-dashed border-gray-400 mb-2"></div>
-     <div class="w-full flex justify-between font-bold text-xs mb-1">
-        <span>CANT</span>
-        <span class="flex-1 ml-2">DESCRIPCIÓN</span>
-        <span class="text-right w-16">IMPORTE</span>
-     </div>
-     <div class="w-full text-xs space-y-1">
-        ${itemsHtml}
-     </div>
-     <div class="w-full border-t-2 border-dashed border-gray-400 mt-2 mb-2"></div>
-     <div class="w-full flex justify-between items-center text-base font-bold mb-2">
-        <span>TOTAL:</span>
-        <span class="text-lg">${currency(orderTotal)}</span>
-     </div>
-     <div class="w-full border-t border-solid border-gray-300 mb-2"></div>
-     <div class="w-full text-xs space-y-1">
-      <div class="font-bold text-center mb-1">DETALLE DE PAGO</div>
-      <div class="flex justify-between"><span>PAGÓ CON (${clickedSale.payment_method || 'Efectivo'}):</span><span>${currency(cashPaid)}</span></div>
-      <div class="flex justify-between font-bold text-sm mt-1"><span>SU CAMBIO:</span><span>${currency(change)}</span></div>
-     </div>
-     <div class="w-full border-t-2 border-dashed border-gray-400 mt-3 mb-2"></div>
-     <div class="text-center text-xs space-y-1">
-      <div class="font-bold">¡GRACIAS POR SU COMPRA!</div>
-      <div>Vuelva pronto</div>
-      <div class="text-[10px] mt-2 text-gray-500">Este documento no es un comprobante fiscal</div>
-     </div>
-    `;
-
-    document.getElementById('printable-ticket').innerHTML = ticketHtml;
+    const dateTime = new Date(clickedSale.date).toLocaleString('es-MX');
+    
+    // Es Abono?
+    if (clickedSale.status === 'abono') {
+        const sysLogo = getSystemLogo();
+        const logoPrintHtml = sysLogo ? `<img src="${sysLogo}" style="max-width: 140px; max-height: 80px; margin: 0 auto 10px auto; display: block; object-fit: contain;">` : '';
+        const ticketHtml = `
+         <div class="text-center mb-3">${logoPrintHtml}<div class="text-2xl font-bold tracking-tight uppercase">${bizName()}</div>
+          <div class="text-xs mt-1"><div class="font-bold">COMPROBANTE DE PAGO / ABONO (COPIA)</div>
+           <div class="font-bold mt-1">${dateTime}</div><div>FOLIO #${ticketNum}</div>
+          </div>
+         </div>
+         <div class="w-full border-t-2 border-dashed border-gray-400 my-4"></div>
+         <div class="w-full text-sm space-y-2">
+          <div class="font-bold text-center mb-2">${clickedSale.name}</div>
+          <div class="flex justify-between font-bold text-success text-base"><span>MONTO RECIBIDO:</span><span>${currency(clickedSale.total)}</span></div>
+         </div>
+         <div class="w-full border-t-2 border-dashed border-gray-400 mt-4 mb-2"></div>
+         <div class="text-center text-xs mt-4 font-bold">Copia generada del historial de caja.</div>`;
+        document.getElementById('printable-ticket').innerHTML = ticketHtml;
+    } else {
+        // Venta Normal
+        const orderTotal = clickedSale.order_total || clickedSale.total;
+        const cashPaid = clickedSale.cash_received || clickedSale.total;
+        const change = clickedSale.change_returned || 0;
+        const itemsHtml = relatedSales.map(item => `<div class="flex justify-between items-start"><span class="w-8">${item.quantity||1}x</span><span class="flex-1 text-left uppercase truncate px-1">${item.name}</span><span class="w-16 text-right">${currency(item.total)}</span></div>`).join('');
+        const sysLogo = getSystemLogo();
+        const logoPrintHtml = sysLogo ? `<img src="${sysLogo}" style="max-width: 140px; max-height: 80px; margin: 0 auto 10px auto; display: block; object-fit: contain;">` : '';
+        const ticketHtml = `
+         <div class="text-center mb-3">${logoPrintHtml}<div class="text-2xl font-bold tracking-tight uppercase">${bizName()}</div>
+          <div class="text-xs mt-1"><div class="font-bold">TICKET DE VENTA (COPIA)</div>
+           <div class="font-bold mt-1">${dateTime}</div><div>TICKET #${ticketNum}</div>
+          </div>
+         </div>
+         <div class="w-full border-t-2 border-dashed border-gray-400 mb-2"></div>
+         <div class="w-full flex justify-between font-bold text-xs mb-1"><span>CANT</span><span class="flex-1 ml-2">DESCRIPCIÓN</span><span class="text-right w-16">IMPORTE</span></div>
+         <div class="w-full text-xs space-y-1">${itemsHtml}</div>
+         <div class="w-full border-t-2 border-dashed border-gray-400 mt-2 mb-2"></div>
+         <div class="w-full flex justify-between items-center text-base font-bold mb-2"><span>TOTAL:</span><span class="text-lg">${currency(orderTotal)}</span></div>
+         <div class="w-full border-t border-solid border-gray-300 mb-2"></div>
+         <div class="w-full text-xs space-y-1"><div class="font-bold text-center mb-1">DETALLE DE PAGO</div><div class="flex justify-between"><span>PAGÓ CON (${clickedSale.payment_method || 'Efectivo'}):</span><span>${currency(cashPaid)}</span></div><div class="flex justify-between font-bold text-sm mt-1"><span>SU CAMBIO:</span><span>${currency(change)}</span></div></div>
+         <div class="w-full border-t-2 border-dashed border-gray-400 mt-3 mb-2"></div>
+         <div class="text-center text-xs space-y-1"><div class="font-bold">¡GRACIAS POR SU COMPRA!</div></div>`;
+        document.getElementById('printable-ticket').innerHTML = ticketHtml;
+    }
 
     document.getElementById('receipt-modal').classList.remove('hidden');
     document.getElementById('receipt-modal').classList.add('flex');
-    
-    document.getElementById('receipt-close').onclick = () => {
-      document.getElementById('receipt-modal').classList.remove('flex');
-      document.getElementById('receipt-modal').classList.add('hidden');
-    };
+    document.getElementById('receipt-close').onclick = () => { document.getElementById('receipt-modal').classList.replace('flex','hidden'); };
   }
 
   function renderCashierClose() {
@@ -3374,28 +3724,30 @@ function renderCashierPOS() {
     const salesTotal = mySales.reduce((a,s)=>a+(s.total||0),0);
     const cashSales = mySales.filter(s=>s.payment_method==='Efectivo').reduce((a,s)=>a+(s.total||0),0);
     const transferSales = mySales.filter(s=>s.payment_method==='Transfer').reduce((a,s)=>a+(s.total||0),0);
-    const expectedCash = initialCash + cashSales;
+    const creditSales = mySales.filter(s=>s.payment_method==='Crédito').reduce((a,s)=>a+(s.total||0),0);
+    const expectedCash = initialCash + cashSales; // El crédito no entra a la caja física
 
     posContent.innerHTML = `
     <div class="p-4 fade-in space-y-4 max-w-lg mx-auto">
       <h2 class="text-xl font-bold text-center">Corte de Caja</h2>
-      <div class="bg-surface rounded-xl p-5 border border-card space-y-4">
+      <div class="bg-surface rounded-xl p-5 border border-card space-y-4 shadow-sm">
         <div class="flex justify-between"><span class="text-muted">Fondo inicial:</span><span class="font-semibold">${currency(initialCash)}</span></div>
-        <div class="flex justify-between"><span class="text-muted">Ventas de este turno:</span><span class="font-semibold text-success">${currency(salesTotal)}</span></div>
+        <div class="flex justify-between"><span class="text-muted">Ventas / Abonos de hoy:</span><span class="font-semibold text-success">${currency(salesTotal)}</span></div>
         <div class="border-t border-card pt-3 space-y-2">
-          <div class="flex justify-between text-sm"><span class="text-muted">Efectivo:</span><span>${currency(cashSales)}</span></div>
-          <div class="flex justify-between text-sm"><span class="text-muted">Transferencia:</span><span>${currency(transferSales)}</span></div>
+          <div class="flex justify-between text-sm"><span class="text-muted">Entró en Efectivo:</span><span class="font-bold">${currency(cashSales)}</span></div>
+          <div class="flex justify-between text-sm"><span class="text-muted">Transferencias:</span><span>${currency(transferSales)}</span></div>
+          <div class="flex justify-between text-sm"><span class="text-muted">Vendido a Crédito (Fiado):</span><span class="text-warn">${currency(creditSales)}</span></div>
         </div>
         <div class="border-t border-card pt-3 flex justify-between text-lg font-bold">
-          <span>Efectivo esperado:</span><span class="text-accent">${currency(expectedCash)}</span>
+          <span>Efectivo Físico Esperado:</span><span class="text-accent">${currency(expectedCash)}</span>
         </div>
         <div>
           <label class="block text-sm text-muted mb-1">Efectivo en caja real:</label>
           <input id="real-cash" type="number" step="0.01" class="w-full bg-card border border-card rounded-lg px-4 py-3 text-center text-xl font-bold focus:border-accent focus:outline-none" value="${expectedCash.toFixed(2)}">
         </div>
         <div id="diff-display" class="text-center text-sm font-semibold"></div>
-        <button id="close-register" class="w-full bg-warn text-bg font-bold py-3 rounded-lg hover:opacity-90 transition flex justify-center items-center gap-2">
-          <i data-lucide="lock" class="w-5 h-5"></i> Cerrar y Enviar WhatsApp
+        <button id="close-register" class="w-full bg-warn text-bg font-bold py-3.5 rounded-lg hover:opacity-90 transition flex justify-center items-center gap-2 shadow-lg">
+          <i data-lucide="lock" class="w-5 h-5"></i> Cerrar Caja y Enviar Reporte
         </button>
       </div>
     </div>`;
@@ -3405,31 +3757,25 @@ function renderCashierPOS() {
     function updateDiff() {
       const real = parseFloat(realInput.value) || 0;
       const diff = real - expectedCash;
-      if (Math.abs(diff) < 0.01) diffDisplay.innerHTML = '<span class="text-success">✓ Sin diferencia</span>';
-      else if (diff > 0) diffDisplay.innerHTML = `<span class="text-accent">Sobrante: ${currency(diff)}</span>`;
-      else diffDisplay.innerHTML = `<span class="text-danger">Faltante: ${currency(Math.abs(diff))}</span>`;
+      if (Math.abs(diff) < 0.01) diffDisplay.innerHTML = '<span class="text-success">✓ Caja Cuadrada Perfectamente</span>';
+      else if (diff > 0) diffDisplay.innerHTML = `<span class="text-accent">Sobrante en caja: ${currency(diff)}</span>`;
+      else diffDisplay.innerHTML = `<span class="text-danger">Faltante en caja: ${currency(Math.abs(diff))}</span>`;
     }
-    realInput.oninput = updateDiff;
-    updateDiff();
+    realInput.oninput = updateDiff; updateDiff();
 
     document.getElementById('close-register').onclick = async () => {
       const btn = document.getElementById('close-register');
-      btn.disabled=true; btn.textContent='Cerrando...';
+      btn.disabled=true; btn.textContent='Cerrando Caja...';
       const realCash = parseFloat(realInput.value) || 0;
       const diff = realCash - expectedCash;
 
       await dbSdk.create({
-        type:'cash_close', name: currentUser?.username||'cajero', code:'',
-        category:'', buy_price:0, sell_price:0, stock:0, min_stock:0,
-        quantity: mySales.length, total: salesTotal,
-        payment_method:'', cashier: currentUser?.username||'',
-        date: now(), amount: diff,
+        type:'cash_close', name: currentUser?.username||'cajero', code:'', category:'', buy_price:0, sell_price:0, stock:0, min_stock:0,
+        quantity: mySales.length, total: salesTotal, payment_method:'', cashier: currentUser?.username||'', date: now(), amount: diff,
         description: `Caja inicial: ${initialCash}, Esperado: ${expectedCash}, Real: ${realCash}`,
         status:'closed', initial_cash: initialCash, final_cash: realCash, sales_total: salesTotal
       });
       
-      showToast('Caja cerrada correctamente');
-
       if (defaultConfig.whatsapp_number) {
         const waText = `*CORTE DE CAJA - ${bizName()}*%0A` +
           `Cajero: ${currentUser?.name || currentUser?.username}%0A` +
@@ -3437,34 +3783,25 @@ function renderCashierPOS() {
           `Cierre: ${new Date().toLocaleString('es-MX')}%0A` +
           `-------------------%0A` +
           `Fondo inicial: ${currency(initialCash)}%0A` +
-          `Ventas (Efectivo): ${currency(cashSales)}%0A` +
-          `Ventas (Transfer): ${currency(transferSales)}%0A` +
-          `*Total Vendido: ${currency(salesTotal)}*%0A` +
+          `Ventas/Abonos Efectivo: ${currency(cashSales)}%0A` +
+          `Ventas Transferencia: ${currency(transferSales)}%0A` +
+          `Ventas Fiadas (Crédito): ${currency(creditSales)}%0A` +
+          `*Total de Movimientos: ${currency(salesTotal)}*%0A` +
           `-------------------%0A` +
-          `Efectivo Esperado: ${currency(expectedCash)}%0A` +
-          `Efectivo Real: ${currency(realCash)}%0A` +
+          `Efectivo Físico Esperado: ${currency(expectedCash)}%0A` +
+          `Efectivo Real en Caja: ${currency(realCash)}%0A` +
           `*Diferencia: ${currency(diff)}* ${diff >= 0 ? '✅' : '⚠️'}`;
 
         const cleanNumber = defaultConfig.whatsapp_number.replace(/\D/g, ''); 
-        const waUrl = `https://wa.me/${cleanNumber}?text=${waText}`;
-        window.open(waUrl, '_blank'); 
-      } else {
-        showToast('Configura el número de WhatsApp en Admin', 'warn');
+        window.open(`https://wa.me/${cleanNumber}?text=${waText}`, '_blank'); 
       }
 
-      cashRegisterOpen = false;
-      cart = [];
-      currentView = 'login';
-      
+      cashRegisterOpen = false; cart = []; currentView = 'login';
       localStorage.removeItem(`pos_register_open_${currentUser.username}`);
       localStorage.removeItem(`pos_initial_cash_${currentUser.username}`);
       localStorage.removeItem(`pos_session_start_${currentUser.username}`);
-      
-      currentUser = null;
-      sessionStart = null;
-      localStorage.removeItem('pos_user');
-      localStorage.setItem('pos_view', 'login');
-      
+      currentUser = null; sessionStart = null;
+      localStorage.removeItem('pos_user'); localStorage.setItem('pos_view', 'login');
       setTimeout(() => render(), 1000);
     };
   }

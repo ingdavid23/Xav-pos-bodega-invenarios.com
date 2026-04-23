@@ -300,7 +300,9 @@ html, body { height: 100%; margin: 0; overflow: hidden; } /* Prevenir scroll dob
 // ========== FIREBASE SETUP ==========
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+// LÍNEA REEMPLAZADA: Ahora incluye "query" y "where" al final
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCZop3ajDiubihHxAl_P6oqUSSVN9K5KtQ",
@@ -897,7 +899,10 @@ function renderInventory(container) {
 
   // 1. DIBUJO DE LA LISTA DE PRODUCTOS (Tarjetas en móvil, Filas en PC)
   function renderList() {
-    const filtered = products.filter(p => !searchTerm || p.name.toLowerCase().includes(searchTerm.toLowerCase()) || (p.code||'').toLowerCase().includes(searchTerm.toLowerCase()));
+    // CAMBIO CLAVE: Pedir los productos frescos de la memoria global cada vez que se dibuja
+    const currentProducts = records('product'); 
+    
+    const filtered = currentProducts.filter(p => !searchTerm || p.name.toLowerCase().includes(searchTerm.toLowerCase()) || (p.code||'').toLowerCase().includes(searchTerm.toLowerCase()));
     const list = document.getElementById('inv-list');
     if (!list) return;
     
@@ -3809,13 +3814,27 @@ function renderCashierAbonos() {
   renderTabContent();
 }
 
-  // ========== ESCUCHA MULTICAJA EN TIEMPO REAL (MODULAR) ==========
-  // IMPORTANTE: Aquí añadimos 'archivos_sistema' a la lista
-  // IMPORTANTE: Aquí añadimos clientes, creditos y abonos a la lista
-  const colecciones = ['productos', 'ventas', 'egresos', 'usuarios', 'movimientos', 'cortes_caja', 'categorias', 'configuracion', 'archivos_sistema', 'clientes', 'creditos', 'abonos'];
+ // ========== ESCUCHA MULTICAJA EN TIEMPO REAL (OPTIMIZADA PARA AHORRO DE CUOTA) ==========
   
-  colecciones.forEach(colName => {
-    onSnapshot(collection(db, colName), (snapshot) => {
+  // 1. Dividimos las colecciones según cómo queremos descargarlas
+  const coleccionesCatalogos = ['productos', 'usuarios', 'categorias', 'configuracion', 'archivos_sistema', 'clientes'];
+  const coleccionesHistoricas = ['ventas', 'egresos', 'movimientos', 'cortes_caja', 'creditos', 'abonos'];
+  
+  // 2. Calculamos la fecha límite (Solo descargar datos de los últimos 60 días)
+  const fechaLimite = new Date();
+  fechaLimite.setDate(fechaLimite.getDate() - 60);
+  const limiteIso = fechaLimite.toISOString();
+
+  // 3. Función inteligente para escuchar cambios
+  function activarSincronizacion(colName, esHistorico) {
+    let consulta = collection(db, colName);
+    
+    // Si es histórico, le aplicamos el filtro de fecha para ahorrar miles de lecturas
+    if (esHistorico) {
+      consulta = query(consulta, where("date", ">=", limiteIso));
+    }
+    
+    onSnapshot(consulta, (snapshot) => {
       let hasChanges = false;
       
       snapshot.docChanges().forEach((change) => {
@@ -3854,22 +3873,27 @@ function renderCashierAbonos() {
           headers.forEach(h => h.textContent = defaultConfig.business_name);
         }
 
-        // Actualización de vistas (sin recargar todo)
+        // --- ACTUALIZACIÓN DE VISTAS ---
         if (currentView === 'cashier-pos') {
           const posSearch = document.getElementById('pos-search');
           if (posSearch) posSearch.dispatchEvent(new Event('input')); 
         } else if (currentView === 'admin-inventory') {
           const invSearch = document.getElementById('inv-search');
           if (invSearch) invSearch.dispatchEvent(new Event('input')); 
-        } else if (['login', 'admin-dashboard', 'admin-sales', 'admin-finance', 'cashier-history', 'cashier-close'].includes(currentView)) {
-          // Agregamos cashier-history y cashier-close para que se actualicen en vivo
+        } else if (['login', 'admin-dashboard', 'admin-sales', 'admin-finance', 'cashier-history', 'cashier-close', 'cashier-abonos'].includes(currentView)) {
+          // Agregamos todas las vistas del cajero y el admin para que se actualicen en vivo
           render(); 
         }
       }
     }, (error) => {
       console.error(`Error en sincronización de ${colName}: `, error);
     });
-  });
+  }
+
+  // Iniciamos la escucha con las reglas aplicadas
+  coleccionesCatalogos.forEach(c => activarSincronizacion(c, false));
+  coleccionesHistoricas.forEach(c => activarSincronizacion(c, true));
+
   // ========== INDICADOR DE ESTADO DE RED ==========
   window.updateNetworkStatus = () => {
     const isOnline = navigator.onLine;

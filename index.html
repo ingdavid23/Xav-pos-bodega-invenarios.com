@@ -302,7 +302,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebas
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
 
 // LÍNEA REEMPLAZADA: Ahora incluye "query" y "where" al final
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCZop3ajDiubihHxAl_P6oqUSSVN9K5KtQ",
@@ -732,6 +733,11 @@ function renderLogin() {
     if (!user) { document.getElementById('login-error').classList.remove('hidden'); document.getElementById('login-error').textContent = 'Usuario o contraseña incorrectos'; return; }
     
     currentUser = user; localStorage.setItem('pos_user', JSON.stringify(user));
+    
+    // --> ¡AQUÍ ESTÁ LA MAGIA! Iniciamos la descarga pesada SOLO porque ya metió contraseña correcta
+    window.iniciarEscuchaCompleta(user.role); 
+    // <---
+
     cashRegisterOpen = localStorage.getItem(`pos_register_open_${user.username}`) === 'true';
     initialCash = parseFloat(localStorage.getItem(`pos_initial_cash_${user.username}`)) || 0;
     sessionStart = localStorage.getItem(`pos_session_start_${user.username}`) || null;
@@ -791,6 +797,7 @@ function renderAdminShell(contentFn) {
   document.getElementById('logout-btn').onclick = () => { 
     currentUser = null; currentView = 'login'; cart=[]; 
     localStorage.removeItem('pos_user'); localStorage.setItem('pos_view', 'login');
+    window.apagarEscuchaCompleta(); // <-- AGREGAR ESTO
     render(); 
   };
   
@@ -1256,12 +1263,22 @@ function renderInventory(container) {
   lucide.createIcons();
 }
 
-// ========== SALES REPORT ==========
+// ========== SALES REPORT (CON MÁQUINA DEL TIEMPO) ==========
 window.reportDate = window.reportDate || new Date();
+window.historicalSales = window.historicalSales || [];
+window.historicalMovements = window.historicalMovements || [];
 
 function renderSalesReport(container) {
-  const sales = records('sale');
-  const movements = records('movement');
+  // Mezclamos los registros recientes (en vivo) con los históricos descargados sin duplicarlos
+  const uniqueSalesMap = new Map();
+  records('sale').forEach(s => uniqueSalesMap.set(s.id, s));
+  window.historicalSales.forEach(s => uniqueSalesMap.set(s.id, s));
+  const mergedSales = Array.from(uniqueSalesMap.values());
+
+  const uniqueMovMap = new Map();
+  records('movement').forEach(m => uniqueMovMap.set(m.id, m));
+  window.historicalMovements.forEach(m => uniqueMovMap.set(m.id, m));
+  const mergedMovements = Array.from(uniqueMovMap.values());
 
   function draw() {
     const y = window.reportDate.getFullYear();
@@ -1269,13 +1286,13 @@ function renderSalesReport(container) {
     const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
     const monthName = monthNames[m];
 
-    const filteredSales = sales.filter(s => {
+    const filteredSales = mergedSales.filter(s => {
       if(!s.date) return false;
       const d = new Date(s.date);
       return d.getFullYear() === y && d.getMonth() === m;
     });
 
-    const filteredMovements = movements.filter(mov => {
+    const filteredMovements = mergedMovements.filter(mov => {
       if(!mov.date) return false;
       const d = new Date(mov.date);
       return d.getFullYear() === y && d.getMonth() === m;
@@ -1296,6 +1313,11 @@ function renderSalesReport(container) {
           <button type="button" id="rep-prev" class="p-2 hover:bg-card rounded transition text-muted hover:text-txt"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
           <div class="text-sm font-bold w-32 sm:w-36 text-center uppercase tracking-wider text-accent">${monthName} ${y}</div>
           <button type="button" id="rep-next" class="p-2 hover:bg-card rounded transition text-muted hover:text-txt"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+          
+          <div class="border-l border-card pl-1 ml-1 hidden sm:block"></div>
+          <button type="button" id="fetch-cloud-btn" class="p-2 bg-accent/10 text-accent hover:bg-accent hover:text-white rounded transition flex items-center gap-1" title="Descargar Historial del Mes">
+            <i data-lucide="cloud-download" class="w-5 h-5 pointer-events-none"></i> <span class="text-xs font-bold hidden sm:inline pointer-events-none">Nube</span>
+          </button>
         </div>
       </div>
 
@@ -1391,7 +1413,7 @@ function renderSalesReport(container) {
                     <i data-lucide="rotate-ccw" class="w-4 h-4 pointer-events-none"></i>
                   </button>
                 </td>
-              </tr>`).join('') || `<tr><td colspan="7" class="p-8 text-center text-muted">Sin movimientos de inventario en ${monthName}</td></tr>`}
+              </tr>`).join('') || `<tr><td colspan="7" class="p-8 text-center text-muted">Sin movimientos en ${monthName}</td></tr>`}
           </tbody>
         </table>
       </div>
@@ -1401,6 +1423,35 @@ function renderSalesReport(container) {
 
     document.getElementById('rep-prev').onclick = () => { window.reportDate.setMonth(window.reportDate.getMonth() - 1); draw(); };
     document.getElementById('rep-next').onclick = () => { window.reportDate.setMonth(window.reportDate.getMonth() + 1); draw(); };
+    
+    // LOGICA DE LA NUBE PARA REPORTES
+    document.getElementById('fetch-cloud-btn').onclick = async () => {
+      const btn = document.getElementById('fetch-cloud-btn');
+      btn.innerHTML = '<i data-lucide="loader" class="w-5 h-5 animate-spin"></i>';
+      btn.disabled = true;
+
+      const start = new Date(y, m, 1).toISOString();
+      const end = new Date(y, m + 1, 0, 23, 59, 59).toISOString();
+
+      try {
+        const salesQ = query(collection(db, 'ventas'), where('date', '>=', start), where('date', '<=', end));
+        const movQ = query(collection(db, 'movimientos'), where('date', '>=', start), where('date', '<=', end));
+
+        const [sSnap, mSnap] = await Promise.all([getDocs(salesQ), getDocs(movQ)]);
+
+        sSnap.forEach(doc => window.historicalSales.push({ id: doc.id, ...doc.data() }));
+        mSnap.forEach(doc => window.historicalMovements.push({ id: doc.id, ...doc.data() }));
+
+        showToast(`Datos de ${monthName} ${y} descargados`, 'success');
+        renderSalesReport(container); // Recargar la vista con los nuevos datos
+      } catch (error) {
+        console.error(error);
+        showToast('Error de conexión', 'error');
+        btn.innerHTML = '<i data-lucide="cloud-download" class="w-5 h-5"></i>';
+        btn.disabled = false;
+      }
+    };
+
     document.getElementById('export-sales-btn').onclick = () => {
         if(!filteredSales.length) return showToast('No hay datos para exportar', 'warn');
         const data = filteredSales.map(s => ({
@@ -1414,13 +1465,12 @@ function renderSalesReport(container) {
     };
   }
 
-  // === INTERCEPTOR DE CLICS (Eliminar Venta/Abono y Revertir Movimientos) ===
+  // === INTERCEPTOR DE CLICS MANTIENE SU LÓGICA ORIGINAL ===
   container.onclick = (e) => {
-    
     // A) Eliminar Venta o Abono
     const delSaleBtn = e.target.closest('[data-del-sale]');
     if (delSaleBtn) {
-      const s = sales.find(r => r.id === delSaleBtn.dataset.delSale);
+      const s = mergedSales.find(r => r.id === delSaleBtn.dataset.delSale);
       if (s) {
         const esAbono = s.status === 'abono';
         const msg = esAbono 
@@ -1429,32 +1479,22 @@ function renderSalesReport(container) {
 
         showConfirm(msg, async () => {
           if (esAbono) {
-            // Lógica para abonos: restaurar deuda
             const payment = allRecords.find(p => p.type === 'payment' && p.ticket_num === s.ticket_num);
             if (payment) {
               const client = allRecords.find(c => c.type === 'client' && c.id === payment.client_id);
-              if (client) {
-                const newDebt = (client.debt || 0) + payment.amount;
-                await dbSdk.update({ ...client, debt: newDebt });
-              }
+              if (client) await dbSdk.update({ ...client, debt: (client.debt || 0) + payment.amount });
               await dbSdk.delete(payment);
             }
           } else {
-            // Lógica para ventas: restaurar stock silenciosamente (SIN crear movimiento en la tabla)
             const product = allRecords.find(p => p.type === 'product' && p.name === s.name);
-            if (product) {
-              const qtyToRestore = Number(s.quantity || 1);
-              const newStock = Number(product.stock) + qtyToRestore;
-              
-              // Solo actualizamos el inventario real del producto
-              await dbSdk.update({ ...product, stock: newStock });
-              
-              // ELIMINAMOS la función que creaba el registro en "Movimientos de Stock"
-            }
+            if (product) await dbSdk.update({ ...product, stock: Number(product.stock) + Number(s.quantity || 1) });
           }
-          // Siempre borrar el registro de venta actual
-          await dbSdk.delete(s);
-          showToast('Venta eliminada y stock restaurado', 'success');
+          await dbSdk.delete({ type: 'sale', id: s.id });
+          
+          // Limpiamos de la memoria histórica si lo borramos
+          window.historicalSales = window.historicalSales.filter(hs => hs.id !== s.id);
+          showToast('Eliminado correctamente', 'success');
+          renderSalesReport(container);
         });
       }
     }
@@ -1462,30 +1502,21 @@ function renderSalesReport(container) {
     // B) Revertir Movimiento de Stock manual
     const delMovBtn = e.target.closest('[data-del-mov]');
     if (delMovBtn) {
-      const m = movements.find(r => r.id === delMovBtn.dataset.delMov);
+      const m = mergedMovements.find(r => r.id === delMovBtn.dataset.delMov);
       if (m) {
         const isEntrada = m.category === 'in';
-        const actionText = isEntrada ? 'restar' : 'sumar';
-        
-        showConfirm(`¿Revertir este movimiento y ${actionText} ${m.quantity} uds al stock de ${m.name}?`, async () => {
+        showConfirm(`¿Revertir este movimiento y ${isEntrada ? 'restar' : 'sumar'} ${m.quantity} uds al stock de ${m.name}?`, async () => {
           const product = allRecords.find(p => p.type === 'product' && p.name === m.name);
-          
           if (product) {
-            const qty = Number(m.quantity || 0);
             let newStock = Number(product.stock);
-            
-            if (isEntrada) {
-              newStock -= qty; 
-              if (newStock < 0) newStock = 0; 
-            } else {
-              newStock += qty; 
-            }
-            
+            if (isEntrada) { newStock -= Number(m.quantity || 0); if (newStock < 0) newStock = 0; } 
+            else { newStock += Number(m.quantity || 0); }
             await dbSdk.update({ ...product, stock: newStock });
           }
-          
-          await dbSdk.delete(m);
+          await dbSdk.delete({ type: 'movement', id: m.id });
+          window.historicalMovements = window.historicalMovements.filter(hm => hs.id !== m.id);
           showToast('Movimiento revertido correctamente', 'success');
+          renderSalesReport(container);
         });
       }
     }
@@ -1494,12 +1525,21 @@ function renderSalesReport(container) {
   draw();
 }
 
-// ========== FINANCE ==========
+// ========== FINANCE (CON MÁQUINA DEL TIEMPO) ==========
 window.financeDate = window.financeDate || new Date();
+window.historicalExpenses = window.historicalExpenses || [];
 
 function renderFinance(container) {
-  const sales = records('sale');
-  const expenses = records('expense');
+  // Mezclamos en memoria
+  const uniqueSalesMap = new Map();
+  records('sale').forEach(s => uniqueSalesMap.set(s.id, s));
+  window.historicalSales.forEach(s => uniqueSalesMap.set(s.id, s));
+  const mergedSales = Array.from(uniqueSalesMap.values());
+
+  const uniqueExpMap = new Map();
+  records('expense').forEach(e => uniqueExpMap.set(e.id, e));
+  window.historicalExpenses.forEach(e => uniqueExpMap.set(e.id, e));
+  const mergedExpenses = Array.from(uniqueExpMap.values());
 
   function draw() {
     const y = window.financeDate.getFullYear();
@@ -1508,13 +1548,13 @@ function renderFinance(container) {
     const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
     const monthName = monthNames[m];
 
-    const monthSales = sales.filter(s => {
+    const monthSales = mergedSales.filter(s => {
       if(!s.date) return false;
       const d = new Date(s.date);
       return d.getFullYear() === y && d.getMonth() === m;
     });
     
-    const monthExpenses = expenses.filter(e => {
+    const monthExpenses = mergedExpenses.filter(e => {
       if(!e.date) return false;
       const d = new Date(e.date);
       return d.getFullYear() === y && d.getMonth() === m;
@@ -1559,6 +1599,12 @@ function renderFinance(container) {
           <button type="button" id="fin-prev" class="p-1.5 hover:bg-card rounded transition text-muted hover:text-txt"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
           <div class="text-sm font-bold w-36 text-center uppercase tracking-wider text-accent">${monthName} ${y}</div>
           <button type="button" id="fin-next" class="p-1.5 hover:bg-card rounded transition text-muted hover:text-txt"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+          
+          <div class="border-l border-card pl-1 ml-1 hidden sm:block"></div>
+<button type="button" id="fin-cloud-btn" class="px-3 py-1.5 bg-accent/10 text-accent hover:bg-accent hover:text-white rounded transition flex items-center gap-2" title="Descargar Historial">
+  <i data-lucide="download" class="w-4 h-4 pointer-events-none"></i>
+  <span class="text-xs font-bold pointer-events-none">Nube</span>
+</button>
         </div>
       </div>
 
@@ -1637,13 +1683,34 @@ function renderFinance(container) {
 
     document.getElementById('exp-date').value = today();
 
-    document.getElementById('fin-prev').onclick = () => {
-      window.financeDate.setMonth(window.financeDate.getMonth() - 1);
-      draw();
-    };
-    document.getElementById('fin-next').onclick = () => {
-      window.financeDate.setMonth(window.financeDate.getMonth() + 1);
-      draw();
+    document.getElementById('fin-prev').onclick = () => { window.financeDate.setMonth(window.financeDate.getMonth() - 1); draw(); };
+    document.getElementById('fin-next').onclick = () => { window.financeDate.setMonth(window.financeDate.getMonth() + 1); draw(); };
+
+    // LOGICA NUBE PARA FINANZAS
+    document.getElementById('fin-cloud-btn').onclick = async () => {
+      const btn = document.getElementById('fin-cloud-btn');
+      btn.innerHTML = '<i data-lucide="loader" class="w-5 h-5 animate-spin"></i>';
+      btn.disabled = true;
+
+      const start = new Date(y, m, 1).toISOString();
+      const end = new Date(y, m + 1, 0, 23, 59, 59).toISOString();
+
+      try {
+        const salesQ = query(collection(db, 'ventas'), where('date', '>=', start), where('date', '<=', end));
+        const expQ = query(collection(db, 'egresos'), where('date', '>=', start), where('date', '<=', end));
+
+        const [sSnap, eSnap] = await Promise.all([getDocs(salesQ), getDocs(expQ)]);
+
+        sSnap.forEach(doc => window.historicalSales.push({ id: doc.id, ...doc.data() }));
+        eSnap.forEach(doc => window.historicalExpenses.push({ id: doc.id, ...doc.data() }));
+
+        showToast(`Finanzas de ${monthName} descargadas`, 'success');
+        renderFinance(container); 
+      } catch (error) {
+        console.error(error); showToast('Error conectando a la nube', 'error');
+        btn.innerHTML = '<i data-lucide="cloud-download" class="w-5 h-5"></i>';
+        btn.disabled = false;
+      }
     };
 
     document.getElementById('expense-form').onsubmit = async (e) => {
@@ -1652,17 +1719,14 @@ function renderFinance(container) {
       const amount = parseFloat(document.getElementById('exp-amount').value);
       const customDateStr = document.getElementById('exp-date').value; 
       
-      if (!desc || !amount || !customDateStr) { showToast('Completa los campos','warn'); return; }
-      
+      if (!desc || !amount || !customDateStr) return showToast('Completa los campos','warn');
       const btn = document.getElementById('exp-btn');
-      btn.disabled = true; btn.textContent = 'Guardando...';
+      btn.disabled = true; btn.textContent = '...';
       
       let finalDate = now();
-      if (customDateStr !== today()) {
-         finalDate = customDateStr + 'T12:00:00.000Z'; 
-      }
+      if (customDateStr !== today()) finalDate = customDateStr + 'T12:00:00.000Z'; 
 
-      const res = await dbSdk.create({
+      await dbSdk.create({
         type:'expense', name: desc, code:'', category: document.getElementById('exp-cat').value,
         buy_price:0, sell_price:0, stock:0, min_stock:0, quantity:0, total:0,
         payment_method:'', cashier: currentUser?.username||'', date: finalDate,
@@ -1670,16 +1734,17 @@ function renderFinance(container) {
       });
       
       btn.disabled = false; btn.textContent = 'Registrar Egreso';
-      if (res.isOk) { showToast('Egreso registrado'); }
-      else showToast('Error al registrar','error');
+      showToast('Egreso registrado');
     };
 
     container.querySelectorAll('[data-del-exp]').forEach(btn => {
       btn.onclick = () => {
-        const rec = allRecords.find(r => r.id === btn.dataset.delExp);
-        if (rec) showConfirm('¿Eliminar este egreso permanentemente?', async () => {
-          await dbSdk.delete(rec);
+        const rec = mergedExpenses.find(r => r.id === btn.dataset.delExp);
+        if (rec) showConfirm('¿Eliminar este egreso?', async () => {
+          await dbSdk.delete({type: 'expense', id: rec.id});
+          window.historicalExpenses = window.historicalExpenses.filter(he => he.id !== rec.id);
           showToast('Egreso eliminado');
+          renderFinance(container);
         });
       };
     });
@@ -2882,9 +2947,9 @@ function renderCashierPOS() {
     document.getElementById('back-login').onclick = () => { 
       currentUser=null; currentView='login'; 
       localStorage.removeItem('pos_user'); localStorage.setItem('pos_view', 'login');
+      window.apagarEscuchaCompleta(); // <-- AGREGAR ESTO
       render(); 
     };
-    return;
   }
 
   let searchTerm = '';
@@ -2929,6 +2994,7 @@ function renderCashierPOS() {
   document.getElementById('cashier-logout').onclick = () => { 
     currentUser=null; currentView='login'; cart=[]; activePosClient=null;
     localStorage.removeItem('pos_user'); localStorage.setItem('pos_view', 'login');
+    window.apagarEscuchaCompleta(); // <-- AGREGAR ESTO
     render(); 
   };
 
@@ -3814,98 +3880,115 @@ function renderCashierAbonos() {
   renderTabContent();
 }
 
- // ========== ESCUCHA MULTICAJA EN TIEMPO REAL (OPTIMIZADA PARA AHORRO DE CUOTA) ==========
+ // ========== ESCUCHA MULTICAJA EN TIEMPO REAL (NIVEL DIOS EN AHORRO) ==========
   
-  // 1. Dividimos las colecciones según cómo queremos descargarlas
-  const coleccionesCatalogos = ['productos', 'usuarios', 'categorias', 'configuracion', 'archivos_sistema', 'clientes'];
-  const coleccionesHistoricas = ['ventas', 'egresos', 'movimientos', 'cortes_caja', 'creditos', 'abonos'];
-  
-  // 2. Calculamos la fecha límite (Solo descargar datos de los últimos 60 días)
-  const fechaLimite = new Date();
-  fechaLimite.setDate(fechaLimite.getDate() - 60);
-  const limiteIso = fechaLimite.toISOString();
+ let escuchasActivas = [];
 
-  // 3. Función inteligente para escuchar cambios
-  function activarSincronizacion(colName, esHistorico) {
-    let consulta = collection(db, colName);
-    
-    // Si es histórico, le aplicamos el filtro de fecha para ahorrar miles de lecturas
-    if (esHistorico) {
-      consulta = query(consulta, where("date", ">=", limiteIso));
-    }
-    
-    onSnapshot(consulta, (snapshot) => {
-      let hasChanges = false;
-      
-      snapshot.docChanges().forEach((change) => {
-        hasChanges = true;
-        const docData = { id: change.doc.id, ...change.doc.data() };
-        const index = allRecords.findIndex(r => r.id === change.doc.id);
-
-        if (change.type === "added" || change.type === "modified") {
-          if (index !== -1) allRecords[index] = docData; 
-          else allRecords.push(docData); 
-        }
-        if (change.type === "removed") {
-          if (index !== -1) allRecords.splice(index, 1);
-        }
-      });
-
-      if (hasChanges) {
-        // --- MAGIA DEL LOGO ---
-        const cloudLogo = allRecords.find(r => r.type === 'sys_file' && r.name === 'main_logo');
-        if (cloudLogo && cloudLogo.image) {
-          localStorage.setItem('pos_system_logo', cloudLogo.image); // Guardar en caché para el Login
-        }
-
-        // --- MAGIA DE LA CONFIGURACIÓN ---
-        const cloudConfig = allRecords.find(r => r.type === 'config');
-        if (cloudConfig) {
-          defaultConfig.business_name = cloudConfig.business_name || 'Mi Negocio';
-          defaultConfig.currency_symbol = cloudConfig.currency_symbol || '$';
-          defaultConfig.whatsapp_number = cloudConfig.whatsapp_number || '';
-          
-          localStorage.setItem('pos_biz_name', defaultConfig.business_name);
-          localStorage.setItem('pos_currency', defaultConfig.currency_symbol);
-          localStorage.setItem('pos_wa_number', defaultConfig.whatsapp_number);
-
-          const headers = document.querySelectorAll('header span.font-bold, h1.text-2xl.font-bold');
-          headers.forEach(h => h.textContent = defaultConfig.business_name);
-        }
-
-        // --- ACTUALIZACIÓN DE VISTAS ---
-        if (currentView === 'cashier-pos') {
-          const posSearch = document.getElementById('pos-search');
-          if (posSearch) posSearch.dispatchEvent(new Event('input')); 
-        } else if (currentView === 'admin-inventory') {
-          const invSearch = document.getElementById('inv-search');
-          if (invSearch) invSearch.dispatchEvent(new Event('input')); 
-        } else if (['login', 'admin-dashboard', 'admin-sales', 'admin-finance', 'cashier-history', 'cashier-close', 'cashier-abonos'].includes(currentView)) {
-          // Agregamos todas las vistas del cajero y el admin para que se actualicen en vivo
-          render(); 
-        }
-      }
-    }, (error) => {
-      console.error(`Error en sincronización de ${colName}: `, error);
-    });
+function activarSincronizacion(colName, filtroFecha) {
+  let consulta = collection(db, colName);
+  if (filtroFecha) {
+    consulta = query(consulta, where("date", ">=", filtroFecha));
   }
+  
+  const unsubscribe = onSnapshot(consulta, (snapshot) => {
+    let hasChanges = false;
+    snapshot.docChanges().forEach((change) => {
+      hasChanges = true;
+      const docData = { id: change.doc.id, ...change.doc.data() };
+      const index = allRecords.findIndex(r => r.id === change.doc.id);
+      if (change.type === "added" || change.type === "modified") {
+        if (index !== -1) allRecords[index] = docData; 
+        else allRecords.push(docData); 
+      }
+      if (change.type === "removed") {
+        if (index !== -1) allRecords.splice(index, 1);
+      }
+    });
 
-  // Iniciamos la escucha con las reglas aplicadas
-  coleccionesCatalogos.forEach(c => activarSincronizacion(c, false));
-  coleccionesHistoricas.forEach(c => activarSincronizacion(c, true));
+    if (hasChanges) {
+      const cloudLogo = allRecords.find(r => r.type === 'sys_file' && r.name === 'main_logo');
+      if (cloudLogo && cloudLogo.image) localStorage.setItem('pos_system_logo', cloudLogo.image);
 
-  // ========== INDICADOR DE ESTADO DE RED ==========
-  window.updateNetworkStatus = () => {
-    const isOnline = navigator.onLine;
+      const cloudConfig = allRecords.find(r => r.type === 'config');
+      if (cloudConfig) {
+        defaultConfig.business_name = cloudConfig.business_name || 'Mi Negocio';
+        defaultConfig.currency_symbol = cloudConfig.currency_symbol || '$';
+        defaultConfig.whatsapp_number = cloudConfig.whatsapp_number || '';
+        localStorage.setItem('pos_biz_name', defaultConfig.business_name);
+        localStorage.setItem('pos_currency', defaultConfig.currency_symbol);
+        localStorage.setItem('pos_wa_number', defaultConfig.whatsapp_number);
+        document.querySelectorAll('header span.font-bold, h1.text-2xl.font-bold').forEach(h => h.textContent = defaultConfig.business_name);
+      }
+
+      if (currentView === 'cashier-pos') {
+        const posSearch = document.getElementById('pos-search');
+        if (posSearch) posSearch.dispatchEvent(new Event('input')); 
+      } else if (currentView === 'admin-inventory') {
+        const invSearch = document.getElementById('inv-search');
+        if (invSearch) invSearch.dispatchEvent(new Event('input')); 
+      } else if (['login', 'admin-dashboard', 'admin-sales', 'admin-finance', 'cashier-history', 'cashier-close', 'cashier-abonos'].includes(currentView)) {
+        render(); 
+      }
+    }
+  }, (error) => console.error(`Error en ${colName}:`, error));
+
+  escuchasActivas.push(unsubscribe);
+}
+
+// 1. LO BÁSICO: Solo lo necesario para que funcione la pantalla de Login
+function iniciarEscuchaBasica() {
+  ['configuracion', 'archivos_sistema', 'usuarios'].forEach(c => activarSincronizacion(c, null));
+}
+
+// 2. LO PESADO: Se ejecuta SOLO cuando alguien inicia sesión
+window.iniciarEscuchaCompleta = (role) => {
+  ['productos', 'categorias', 'clientes'].forEach(c => activarSincronizacion(c, null));
+
+  const limite60Dias = new Date();
+  limite60Dias.setDate(limite60Dias.getDate() - 60);
+  const iso60Dias = limite60Dias.toISOString();
+
+  const limiteHoy = new Date();
+  limiteHoy.setHours(0,0,0,0);
+  const isoHoy = limiteHoy.toISOString();
+
+  if (role === 'admin') {
+    // El Admin descarga todo el historial normal
+    ['ventas', 'egresos', 'movimientos', 'cortes_caja', 'creditos', 'abonos'].forEach(c => activarSincronizacion(c, iso60Dias));
+  } else {
+    // El Cajero necesita el historial de clientes para abonar
+    ['creditos', 'abonos'].forEach(c => activarSincronizacion(c, iso60Dias));
     
-    if (!isOnline) showToast('Se perdió la conexión. Entrando en Modo Offline.', 'warn');
-    else if (isOnline && currentUser) showToast('Conexión restaurada. Sincronizando...', 'success');
-  };
+    // MAGIA: El Cajero SOLO descarga las ventas de HOY (Ahorro masivo)
+    activarSincronizacion('ventas', isoHoy);
+    
+    // Nota: Colecciones como egresos, movimientos y cortes_caja ya NO se descargan para el cajero
+  }
+};
 
-  window.addEventListener('online', updateNetworkStatus);
-  window.addEventListener('offline', updateNetworkStatus);
+// 3. LIMPIEZA: Al cerrar sesión, apagamos todo para no gastar en segundo plano
+window.apagarEscuchaCompleta = () => {
+  escuchasActivas.forEach(unsub => unsub());
+  escuchasActivas = [];
+  allRecords = allRecords.filter(r => ['config', 'sys_file', 'user'].includes(r.type));
+  iniciarEscuchaBasica(); 
+};
 
-  render();
+// Arranque inicial
+iniciarEscuchaBasica();
+if (currentUser) window.iniciarEscuchaCompleta(currentUser.role);
+
+// ========== INDICADOR DE ESTADO DE RED ==========
+window.updateNetworkStatus = () => {
+  const isOnline = navigator.onLine;
+  if (!isOnline) showToast('Se perdió la conexión. Entrando en Modo Offline.', 'warn');
+  else if (isOnline && currentUser) showToast('Conexión restaurada. Sincronizando...', 'success');
+};
+
+window.addEventListener('online', updateNetworkStatus);
+window.addEventListener('offline', updateNetworkStatus);
+
+render();
 
 </script>
  </body>

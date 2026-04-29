@@ -770,9 +770,8 @@ function renderAdminShell(contentFn) {
     { id:'admin-finance', icon:'wallet', label:'Finanzas' },
     { id:'admin-users', icon:'users', label:'Usuarios' },
     { id:'admin-clients', icon:'contact-2', label:'Cartera Clientes' },
-    { id:'admin-settings', icon:'settings', label:'Config' },
-    { id:'cashier-pos', icon:'monitor', label:'Punto de Venta' } // <--- ¡AQUÍ ESTÁ EL NUEVO BOTÓN!
-  ];
+    { id:'admin-settings', icon:'settings', label:'Config' }
+  ]; // <-- Ya no está el botón de Punto de Venta
   app.innerHTML = `
   <div class="h-full w-full flex flex-col" style="min-height:100%;">
     <header class="bg-surface border-b border-card px-4 py-3 flex items-center justify-between shrink-0">

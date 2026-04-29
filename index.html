@@ -738,9 +738,22 @@ function renderLogin() {
     window.iniciarEscuchaCompleta(user.role); 
     // <---
 
-    cashRegisterOpen = localStorage.getItem(`pos_register_open_${user.username}`) === 'true';
-    initialCash = parseFloat(localStorage.getItem(`pos_initial_cash_${user.username}`)) || 0;
-    sessionStart = localStorage.getItem(`pos_session_start_${user.username}`) || null;
+    // === NUEVO: PREGUNTARLE A LA NUBE SI LA CAJA YA ESTÁ ABIERTA ===
+    const fbUser = user.raw || {};
+    if (fbUser.register_open === true) {
+      cashRegisterOpen = true;
+      initialCash = parseFloat(fbUser.initial_cash) || 0;
+      sessionStart = fbUser.session_start || null;
+      
+      localStorage.setItem(`pos_register_open_${user.username}`, 'true');
+      localStorage.setItem(`pos_initial_cash_${user.username}`, initialCash);
+      localStorage.setItem(`pos_session_start_${user.username}`, sessionStart);
+    } else {
+      cashRegisterOpen = localStorage.getItem(`pos_register_open_${user.username}`) === 'true';
+      initialCash = parseFloat(localStorage.getItem(`pos_initial_cash_${user.username}`)) || 0;
+      sessionStart = localStorage.getItem(`pos_session_start_${user.username}`) || null;
+    }
+    // ================================================================
     
     if (user.role === 'admin') { currentView = 'admin-dashboard'; } else { currentView = 'cashier-pos'; }
     localStorage.setItem('pos_view', currentView); render();
@@ -2934,7 +2947,10 @@ function renderCashierPOS() {
     </div>`;
     lucide.createIcons();
     
-    document.getElementById('open-btn').onclick = () => {
+    document.getElementById('open-btn').onclick = async () => { // <--- Asegúrate de poner el async aquí
+      const btn = document.getElementById('open-btn');
+      btn.disabled = true; btn.textContent = 'Abriendo Caja...';
+
       initialCash = parseFloat(document.getElementById('open-cash').value) || 0;
       cashRegisterOpen = true;
       sessionStart = now();
@@ -2942,6 +2958,17 @@ function renderCashierPOS() {
       localStorage.setItem(`pos_register_open_${currentUser.username}`, 'true');
       localStorage.setItem(`pos_initial_cash_${currentUser.username}`, initialCash);
       localStorage.setItem(`pos_session_start_${currentUser.username}`, sessionStart);
+
+      // --- AVISO A FIREBASE: "CAJA ABIERTA" ---
+      if (currentUser && currentUser.raw) {
+        await dbSdk.update({ 
+          ...currentUser.raw, 
+          register_open: true, 
+          initial_cash: initialCash, 
+          session_start: sessionStart 
+        });
+      }
+
       render();
     };
     
@@ -3850,6 +3877,17 @@ function renderCashierAbonos() {
         status:'closed', initial_cash: initialCash, final_cash: realCash, sales_total: salesTotal
       });
       
+      // --- AVISO A FIREBASE: "CAJA CERRADA" ---
+      if (currentUser && currentUser.raw) {
+        await dbSdk.update({ 
+          ...currentUser.raw, 
+          register_open: false, 
+          initial_cash: 0, 
+          session_start: null 
+        });
+      }
+      // ----------------------------------------
+      
       if (defaultConfig.whatsapp_number) {
         const waText = `*CORTE DE CAJA - ${bizName()}*%0A` +
           `Cajero: ${currentUser?.name || currentUser?.username}%0A` +
@@ -3887,56 +3925,79 @@ function renderCashierAbonos() {
   
  let escuchasActivas = [];
 
-function activarSincronizacion(colName, filtroFecha) {
-  let consulta = collection(db, colName);
-  if (filtroFecha) {
-    consulta = query(consulta, where("date", ">=", filtroFecha));
-  }
-  
-  const unsubscribe = onSnapshot(consulta, (snapshot) => {
-    let hasChanges = false;
-    snapshot.docChanges().forEach((change) => {
-      hasChanges = true;
-      const docData = { id: change.doc.id, ...change.doc.data() };
-      const index = allRecords.findIndex(r => r.id === change.doc.id);
-      if (change.type === "added" || change.type === "modified") {
-        if (index !== -1) allRecords[index] = docData; 
-        else allRecords.push(docData); 
-      }
-      if (change.type === "removed") {
-        if (index !== -1) allRecords.splice(index, 1);
-      }
-    });
-
-    if (hasChanges) {
-      const cloudLogo = allRecords.find(r => r.type === 'sys_file' && r.name === 'main_logo');
-      if (cloudLogo && cloudLogo.image) localStorage.setItem('pos_system_logo', cloudLogo.image);
-
-      const cloudConfig = allRecords.find(r => r.type === 'config');
-      if (cloudConfig) {
-        defaultConfig.business_name = cloudConfig.business_name || 'Mi Negocio';
-        defaultConfig.currency_symbol = cloudConfig.currency_symbol || '$';
-        defaultConfig.whatsapp_number = cloudConfig.whatsapp_number || '';
-        localStorage.setItem('pos_biz_name', defaultConfig.business_name);
-        localStorage.setItem('pos_currency', defaultConfig.currency_symbol);
-        localStorage.setItem('pos_wa_number', defaultConfig.whatsapp_number);
-        document.querySelectorAll('header span.font-bold, h1.text-2xl.font-bold').forEach(h => h.textContent = defaultConfig.business_name);
-      }
-
-      if (currentView === 'cashier-pos') {
-        const posSearch = document.getElementById('pos-search');
-        if (posSearch) posSearch.dispatchEvent(new Event('input')); 
-      } else if (currentView === 'admin-inventory') {
-        const invSearch = document.getElementById('inv-search');
-        if (invSearch) invSearch.dispatchEvent(new Event('input')); 
-      } else if (['login', 'admin-dashboard', 'admin-sales', 'admin-finance', 'cashier-history', 'cashier-close', 'cashier-abonos'].includes(currentView)) {
-        render(); 
-      }
+ function activarSincronizacion(colName, filtroFecha) {
+    let consulta = collection(db, colName);
+    if (filtroFecha) {
+      consulta = query(consulta, where("date", ">=", filtroFecha));
     }
-  }, (error) => console.error(`Error en ${colName}:`, error));
+    
+    const unsubscribe = onSnapshot(consulta, (snapshot) => {
+      let hasChanges = false;
+      snapshot.docChanges().forEach((change) => {
+        hasChanges = true;
+        const docData = { id: change.doc.id, ...change.doc.data() };
+        const index = allRecords.findIndex(r => r.id === change.doc.id);
+        if (change.type === "added" || change.type === "modified") {
+          if (index !== -1) allRecords[index] = docData; 
+          else allRecords.push(docData); 
+        }
+        if (change.type === "removed") {
+          if (index !== -1) allRecords.splice(index, 1);
+        }
+      });
 
-  escuchasActivas.push(unsubscribe);
-}
+      if (hasChanges) {
+        const cloudLogo = allRecords.find(r => r.type === 'sys_file' && r.name === 'main_logo');
+        if (cloudLogo && cloudLogo.image) localStorage.setItem('pos_system_logo', cloudLogo.image);
+
+        const cloudConfig = allRecords.find(r => r.type === 'config');
+        if (cloudConfig) {
+          defaultConfig.business_name = cloudConfig.business_name || 'Mi Negocio';
+          defaultConfig.currency_symbol = cloudConfig.currency_symbol || '$';
+          defaultConfig.whatsapp_number = cloudConfig.whatsapp_number || '';
+          localStorage.setItem('pos_biz_name', defaultConfig.business_name);
+          localStorage.setItem('pos_currency', defaultConfig.currency_symbol);
+          localStorage.setItem('pos_wa_number', defaultConfig.whatsapp_number);
+          document.querySelectorAll('header span.font-bold, h1.text-2xl.font-bold').forEach(h => h.textContent = defaultConfig.business_name);
+        }
+
+        // =======================================================
+        // --- MAGIA DE CAJA MULTI-DISPOSITIVO (¡AQUÍ VA PUESTO!) ---
+        // =======================================================
+        if (currentUser && colName === 'usuarios') {
+          const remoteUser = allRecords.find(r => r.type === 'user' && r.name === currentUser.username);
+          if (remoteUser && remoteUser.register_open !== undefined) {
+            const wasOpen = cashRegisterOpen;
+            cashRegisterOpen = remoteUser.register_open === true;
+            initialCash = parseFloat(remoteUser.initial_cash) || 0;
+            sessionStart = remoteUser.session_start || null;
+            
+            localStorage.setItem(`pos_register_open_${currentUser.username}`, cashRegisterOpen);
+            localStorage.setItem(`pos_initial_cash_${currentUser.username}`, initialCash);
+            localStorage.setItem(`pos_session_start_${currentUser.username}`, sessionStart);
+            
+            // Si el dispositivo B estaba en la pantalla de abrir caja, lo pasamos al punto de venta en automático
+            if (!wasOpen && cashRegisterOpen && currentView === 'cashier-pos') {
+              render();
+            }
+          }
+        }
+        // =======================================================
+
+        if (currentView === 'cashier-pos') {
+          const posSearch = document.getElementById('pos-search');
+          if (posSearch) posSearch.dispatchEvent(new Event('input')); 
+        } else if (currentView === 'admin-inventory') {
+          const invSearch = document.getElementById('inv-search');
+          if (invSearch) invSearch.dispatchEvent(new Event('input')); 
+        } else if (['login', 'admin-dashboard', 'admin-sales', 'admin-finance', 'cashier-history', 'cashier-close', 'cashier-abonos'].includes(currentView)) {
+          render(); 
+        }
+      }
+    }, (error) => console.error(`Error en ${colName}:`, error));
+
+    escuchasActivas.push(unsubscribe);
+  }
 
 // 1. LO BÁSICO: Solo lo necesario para que funcione la pantalla de Login
 function iniciarEscuchaBasica() {

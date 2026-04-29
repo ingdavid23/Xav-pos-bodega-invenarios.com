@@ -1956,17 +1956,27 @@ function renderClientsAdmin(container) {
     </div>
 
     <div class="bg-surface rounded-xl p-4 sm:p-5 border border-card shadow-sm">
-      <h3 class="font-semibold mb-3 flex items-center gap-2"><i data-lucide="user-plus" class="w-4 h-4 text-accent"></i> Nuevo Cliente / Sucursal</h3>
-      <form id="client-form" class="flex flex-col sm:flex-row flex-wrap gap-3 items-start sm:items-end">
-        <div class="w-full sm:flex-1">
-          <label class="block text-xs text-muted mb-1">Nombre del Cliente / Sucursal *</label>
-          <input id="cli-name" class="w-full bg-card border border-card rounded-lg px-3 py-2.5 text-sm focus:border-accent focus:outline-none" placeholder="Ej: Sucursal Centro" required>
+      <h3 class="font-semibold mb-3 flex items-center gap-2"><i data-lucide="user-plus" class="w-4 h-4 text-accent"></i> Nuevo Cliente</h3>
+      <form id="client-form" class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+        <div class="w-full">
+          <label class="block text-xs text-muted mb-1">Nombre del Cliente *</label>
+          <input id="cli-name" class="w-full bg-card border border-card rounded-lg px-3 py-2.5 text-sm focus:border-accent focus:outline-none" placeholder="Ej: Juan Pérez" required>
         </div>
-        <div class="w-full sm:flex-1">
-          <label class="block text-xs text-muted mb-1">Teléfono</label>
-          <input id="cli-phone" type="text" class="w-full bg-card border border-card rounded-lg px-3 py-2.5 text-sm focus:border-accent focus:outline-none" placeholder="Opcional">
+        <div class="w-full">
+          <label class="block text-xs text-muted mb-1">Nombre de la Sucursal</label>
+          <input id="cli-branch" class="w-full bg-card border border-card rounded-lg px-3 py-2.5 text-sm focus:border-accent focus:outline-none" placeholder="Ej: Sucursal Centro (Opcional)">
         </div>
-        <button type="submit" id="cli-btn" class="w-full sm:w-auto bg-accent text-bg font-semibold px-6 py-2.5 rounded-lg hover:opacity-90 transition text-sm">Registrar</button>
+        <div class="w-full">
+          <label class="block text-xs text-muted mb-1">Dirección del Cliente</label>
+          <input id="cli-address" class="w-full bg-card border border-card rounded-lg px-3 py-2.5 text-sm focus:border-accent focus:outline-none" placeholder="Ej: Calle Principal #123 (Opcional)">
+        </div>
+        <div class="w-full flex gap-3">
+          <div class="flex-1">
+            <label class="block text-xs text-muted mb-1">Teléfono</label>
+            <input id="cli-phone" type="text" class="w-full bg-card border border-card rounded-lg px-3 py-2.5 text-sm focus:border-accent focus:outline-none" placeholder="Opcional">
+          </div>
+          <button type="submit" id="cli-btn" class="bg-accent text-bg font-semibold px-6 py-2.5 rounded-lg hover:opacity-90 transition text-sm shadow-sm">Registrar</button>
+        </div>
       </form>
     </div>
 
@@ -1974,8 +1984,8 @@ function renderClientsAdmin(container) {
       <table class="w-full text-xs sm:text-sm text-left">
         <thead class="bg-surface/50">
           <tr class="text-muted border-b border-card">
-            <th class="p-2 sm:p-3">Cliente</th>
-            <th class="hidden sm:table-cell p-3">Teléfono</th>
+            <th class="p-2 sm:p-3">Detalles del Cliente</th>
+            <th class="hidden sm:table-cell p-3">Contacto / Dirección</th>
             <th class="p-2 sm:p-3">Deuda Actual</th>
             <th class="p-2 sm:p-3 text-center">Acciones Operativas</th>
           </tr>
@@ -1983,29 +1993,34 @@ function renderClientsAdmin(container) {
         <tbody>
           ${clients.map(c => `
             <tr class="border-b border-card/50 hover:bg-card/30 transition">
-              <td class="p-2 sm:p-3 font-medium truncate max-w-[100px] sm:max-w-none">${c.name}</td>
-              <td class="hidden sm:table-cell p-3 text-muted">${c.phone || '-'}</td>
+              <td class="p-2 sm:p-3">
+                <div class="font-bold text-txt sm:text-base truncate max-w-[120px] sm:max-w-none">${c.name}</div>
+                ${c.branch ? `<div class="text-[10px] sm:text-xs text-accent font-semibold flex items-center gap-1 mt-0.5"><i data-lucide="store" class="w-3 h-3"></i> ${c.branch}</div>` : ''}
+              </td>
+              <td class="hidden sm:table-cell p-3 text-muted space-y-1">
+                ${c.phone ? `<div class="flex items-center gap-1.5"><i data-lucide="phone" class="w-3.5 h-3.5"></i> ${c.phone}</div>` : ''}
+                ${c.address ? `<div class="flex items-start gap-1.5 text-xs"><i data-lucide="map-pin" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i> <span class="max-w-[200px] truncate" title="${c.address}">${c.address}</span></div>` : ''}
+                ${!c.phone && !c.address ? '-' : ''}
+              </td>
               <td class="p-2 sm:p-3 font-bold ${c.debt > 0 ? 'text-danger' : 'text-success'}">${currency(c.debt || 0)}</td>
               
-<td class="p-2 sm:p-3 flex justify-center gap-1 sm:gap-2">
-  <button type="button" onclick="window.openMiniPos('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-accent/10 text-accent rounded-lg hover:bg-accent hover:text-bg transition font-semibold text-xs" title="Distribuir">
-    <i data-lucide="shopping-cart" class="w-4 h-4 sm:w-3.5 sm:h-3.5"></i> <span class="hidden lg:inline ml-1">Distribuir</span>
-  </button>
-  <button type="button" onclick="window.openAbono('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-success/10 text-success rounded-lg hover:bg-success hover:text-bg transition font-semibold text-xs ${c.debt > 0 ? '' : 'opacity-50 cursor-not-allowed'}" ${c.debt > 0 ? '' : 'disabled'}>
-    <i data-lucide="banknote" class="w-4 h-4 sm:w-3.5 sm:h-3.5"></i> <span class="hidden lg:inline ml-1">Abonar</span>
-  </button>
-  <button type="button" onclick="window.openAbonoHistory('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-card border border-surface text-muted rounded-lg hover:bg-surface transition font-semibold text-xs" title="Historial de Abonos">
-    <i data-lucide="history" class="w-4 h-4 sm:w-3.5 sm:h-3.5"></i> <span class="hidden lg:inline ml-1">Historial</span>
-  </button>
-  
-  <button type="button" onclick="window.openCreditProducts('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-accent2/10 text-accent2 border border-accent2/20 rounded-lg hover:bg-accent2 hover:text-white transition font-semibold text-xs" title="Ver Productos a Crédito">
-    <i data-lucide="package" class="w-4 h-4 sm:w-3.5 sm:h-3.5"></i> <span class="hidden lg:inline ml-1">Productos</span>
-  </button>
-
-  <button type="button" onclick="window.deleteClient('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-danger/10 text-danger rounded-lg hover:bg-danger hover:text-bg transition font-semibold text-xs">
-    <i data-lucide="user-x" class="w-4 h-4 sm:w-3.5 sm:h-3.5"></i>
-  </button>
-</td>
+              <td class="p-2 sm:p-3 flex justify-center gap-1 sm:gap-2">
+                <button type="button" onclick="window.openMiniPos('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-accent/10 text-accent rounded-lg hover:bg-accent hover:text-bg transition font-semibold text-xs" title="Distribuir">
+                  <i data-lucide="shopping-cart" class="w-4 h-4 sm:w-3.5 sm:h-3.5"></i> <span class="hidden lg:inline ml-1">Distribuir</span>
+                </button>
+                <button type="button" onclick="window.openAbono('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-success/10 text-success rounded-lg hover:bg-success hover:text-bg transition font-semibold text-xs ${c.debt > 0 ? '' : 'opacity-50 cursor-not-allowed'}" ${c.debt > 0 ? '' : 'disabled'}>
+                  <i data-lucide="banknote" class="w-4 h-4 sm:w-3.5 sm:h-3.5"></i> <span class="hidden lg:inline ml-1">Abonar</span>
+                </button>
+                <button type="button" onclick="window.openAbonoHistory('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-card border border-surface text-muted rounded-lg hover:bg-surface transition font-semibold text-xs" title="Historial de Abonos">
+                  <i data-lucide="history" class="w-4 h-4 sm:w-3.5 sm:h-3.5"></i> <span class="hidden lg:inline ml-1">Historial</span>
+                </button>
+                <button type="button" onclick="window.openCreditProducts('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-accent2/10 text-accent2 border border-accent2/20 rounded-lg hover:bg-accent2 hover:text-white transition font-semibold text-xs" title="Ver Productos a Crédito">
+                  <i data-lucide="package" class="w-4 h-4 sm:w-3.5 sm:h-3.5"></i> <span class="hidden lg:inline ml-1">Productos</span>
+                </button>
+                <button type="button" onclick="window.deleteClient('${c.id}')" class="flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 bg-danger/10 text-danger rounded-lg hover:bg-danger hover:text-bg transition font-semibold text-xs">
+                  <i data-lucide="user-x" class="w-4 h-4 sm:w-3.5 sm:h-3.5"></i>
+                </button>
+              </td>
             </tr>`).join('') || '<tr><td colspan="4" class="p-6 text-center text-muted">No hay clientes registrados</td></tr>'}
         </tbody>
       </table>
@@ -2119,11 +2134,6 @@ function renderClientsAdmin(container) {
       </div>
     </div>
 
-    <div id="edit-abono-modal" class="fixed inset-0 z-[9995] hidden items-center justify-center p-4" style="background:rgba(0,0,0,.8)">
-      <div class="bg-surface rounded-2xl w-full max-w-sm shadow-2xl border border-card slide-up p-6 text-center">
-        </div>
-    </div>
-
   <div id="credit-products-modal" class="fixed inset-0 z-[9992] hidden items-center justify-center p-4" style="background:rgba(0,0,0,.7)">
       <div class="bg-surface rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl border border-card slide-up">
         <div class="p-4 border-b border-card flex justify-between items-center bg-accent2/10 rounded-t-2xl">
@@ -2159,13 +2169,18 @@ function renderClientsAdmin(container) {
     e.preventDefault();
     const btn = document.getElementById('cli-btn');
     btn.disabled = true; btn.textContent = '...';
+    
+    // --- MAGIA NUEVA: Guardamos la sucursal y la dirección en la base de datos ---
     await dbSdk.create({
       type: 'client', 
       name: document.getElementById('cli-name').value.trim(), 
+      branch: document.getElementById('cli-branch').value.trim(), 
+      address: document.getElementById('cli-address').value.trim(), 
       phone: document.getElementById('cli-phone').value.trim(),
       debt: 0, date: now()
     });
-    showToast('Cliente agregado');
+    
+    showToast('Cliente agregado con éxito');
     renderClientsAdmin(container);
   };
 
@@ -2286,7 +2301,6 @@ function renderClientsAdmin(container) {
     });
   };
 
- // === DIBUJO DE TARJETAS PROTEGIDAS (MINI POS) ===
  window.drawMiniPosProductsGrid = () => {
     const grid = document.getElementById('minipos-products-grid');
     if (!grid) return;

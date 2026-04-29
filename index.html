@@ -756,8 +756,9 @@ function renderAdminShell(contentFn) {
     { id:'admin-sales', icon:'receipt', label:'Ventas y Reportes' },
     { id:'admin-finance', icon:'wallet', label:'Finanzas' },
     { id:'admin-users', icon:'users', label:'Usuarios' },
-    { id:'admin-clients', icon:'contact-2', label:'Cartera Clientes' }, // <--- LÍNEA NUEVA
+    { id:'admin-clients', icon:'contact-2', label:'Cartera Clientes' },
     { id:'admin-settings', icon:'settings', label:'Config' },
+    { id:'cashier-pos', icon:'monitor', label:'Punto de Venta' } // <--- ¡AQUÍ ESTÁ EL NUEVO BOTÓN!
   ];
   app.innerHTML = `
   <div class="h-full w-full flex flex-col" style="min-height:100%;">
@@ -2950,11 +2951,13 @@ function renderCashierPOS() {
       window.apagarEscuchaCompleta(); // <-- AGREGAR ESTO
       render(); 
     };
+    
+    return; // <------- ¡ESTA ES LA PALABRA MÁGICA QUE SE HABÍA BORRADO!
   }
 
   let searchTerm = '';
   let paymentMethod = 'Efectivo';
-  let currentPosCategory = ''; 
+  let currentPosCategory = '';
   let activePosClient = null; // Nuevo: Cliente activo en el POS
   let showTab = currentView === 'cashier-history' ? 'history' : currentView === 'cashier-close' ? 'close' : currentView === 'cashier-abonos' ? 'abonos' : 'pos';
 
